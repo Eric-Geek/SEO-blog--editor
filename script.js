@@ -37,6 +37,11 @@ class SEOEditor {
         this.previewMobileBtn = document.getElementById('preview-mobile');
         this.previewDesktopBtn = document.getElementById('preview-desktop');
         
+        // OG Preview
+        this.ogPreviewImage = document.querySelector('.og-preview-image');
+        this.ogPreviewTitle = document.querySelector('.og-title');
+        this.ogPreviewDescription = document.querySelector('.og-description');
+        
         // Modal
         this.settingsModal = document.getElementById('settings-modal');
         this.apiKeyInput = document.getElementById('api-key-input');
@@ -315,8 +320,9 @@ ${imagePrompts.map(img => `图片${img.index + 1}: ${img.src} (上下文: ${img.
         // Process images
         this.processImages();
 
-        // Set hardcoded OG tags
-        this.setHardcodedOgTags();
+        // Set OG tags as fallback and update preview
+        this.ensureOgTagsExist();
+        this.updateOgPreview();
         
         // Enable AI button
         this.aiOptimizeBtn.disabled = false;
@@ -405,7 +411,7 @@ ${imagePrompts.map(img => `图片${img.index + 1}: ${img.src} (上下文: ${img.
         return description.slice(0, 160);
     }
 
-    setHardcodedOgTags() {
+    ensureOgTagsExist() {
         const ogTags = {
             'og:title': 'GlobalGPT Free AI Tools : All-in-One Access to ChatGPT',
             'og:description': 'Explore GlobalGPT\'s free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.',
@@ -414,8 +420,29 @@ ${imagePrompts.map(img => `图片${img.index + 1}: ${img.src} (上下文: ${img.
         };
 
         Object.entries(ogTags).forEach(([property, content]) => {
-            this.updateMetaTag(property, content, 'property');
+            if (!this.getMetaTagContent(property, 'property')) {
+                this.updateMetaTag(property, content, 'property');
+            }
         });
+    }
+
+    updateOgPreview() {
+        if (!this.processedDoc) return;
+
+        const title = this.getMetaTagContent('og:title', 'property');
+        const description = this.getMetaTagContent('og:description', 'property');
+        const imageUrl = this.getMetaTagContent('og:image', 'property');
+
+        if (this.ogPreviewTitle) {
+            this.ogPreviewTitle.textContent = title || 'OG Title not found';
+        }
+        if (this.ogPreviewDescription) {
+            this.ogPreviewDescription.textContent = description || 'OG Description not found';
+        }
+        if (this.ogPreviewImage) {
+            this.ogPreviewImage.src = imageUrl || 'https://via.placeholder.com/1200x630/cccccc/ffffff?text=Image+not+found';
+            this.ogPreviewImage.alt = title ? `OG Preview for ${title}` : 'OG Preview Image';
+        }
     }
 
     handleMetaDescriptionInput() {
@@ -502,7 +529,7 @@ ${imagePrompts.map(img => `图片${img.index + 1}: ${img.src} (上下文: ${img.
         if (!this.processedDoc) return;
         
         // Ensure all changes are applied
-        this.setHardcodedOgTags();
+        this.ensureOgTagsExist();
         
         // Clean up any editor-specific additions
         const editorStyles = this.processedDoc.getElementById('seo-editor-styles');
