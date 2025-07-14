@@ -560,7 +560,7 @@ input[type="file"] {
     max-width: 375px;
 }
 
-/* Modal Styles */
+/* Modal Styles - 确保默认隐藏 */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -568,12 +568,14 @@ input[type="file"] {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
+    display: none; /* 默认隐藏 */
     justify-content: center;
     align-items: center;
     z-index: 1000;
     backdrop-filter: blur(4px);
 }
+
+/* 当需要显示时，JavaScript 会设置 display: flex */
 
 .modal-content {
     background: white;

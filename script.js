@@ -161,7 +161,6 @@ class SEOEditor {
         const apiKey = localStorage.getItem('deepseek_api_key');
         if (!apiKey) {
             this.showToast('请先设置API Key', 'warning');
-            this.showSettingsModal();
             return;
         }
 
@@ -544,13 +543,13 @@ ${imagePrompts.map(img => `图片${img.index + 1}: ${img.src} (上下文: ${img.
 
     // Settings Modal Methods
     showSettingsModal() {
-        this.settingsModal.hidden = false;
+        this.settingsModal.style.display = 'flex';
         this.apiKeyInput.value = localStorage.getItem('deepseek_api_key') || '';
         this.apiKeyInput.focus();
     }
 
     hideSettingsModal() {
-        this.settingsModal.hidden = true;
+        this.settingsModal.style.display = 'none';
     }
 
     saveApiKey() {
