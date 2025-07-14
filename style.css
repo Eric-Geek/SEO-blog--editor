@@ -1,0 +1,330 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+:root {
+    --primary-color: #4a90e2;
+    --secondary-color: #f5f7fa;
+    --text-color: #333;
+    --border-color: #dce1e6;
+    --success-color: #5cb85c;
+    --light-gray: #f0f0f0;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+header h1 {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.icon-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: none;
+    border: none;
+    font-size: 1.8em;
+    cursor: pointer;
+    padding: 10px;
+    line-height: 1;
+}
+
+.ai-button {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(45deg, #6a11cb, #2575fc);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.ai-button:hover:not(:disabled) {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+}
+
+.ai-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.ai-button .ai-icon {
+    font-size: 1.2em;
+    animation: sparkle 2s infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2) rotate(15deg); }
+}
+
+.spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 3px solid #fff;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    border: none;
+    padding-bottom: 0;
+}
+
+.modal-content p {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.modal-content label {
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.modal-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-actions button {
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: none;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+#save-api-key-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#cancel-api-key-btn {
+    background-color: var(--light-gray);
+}
+
+.editor-layout {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 30px;
+}
+
+.controls, .preview {
+    background: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+h2 {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--light-gray);
+    color: var(--primary-color);
+}
+
+.control-group {
+    margin-bottom: 20px;
+}
+
+.control-group label, fieldset legend {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+textarea {
+    resize: vertical;
+}
+
+.char-counter {
+    text-align: right;
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 4px;
+}
+
+input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    background: var(--light-gray);
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+fieldset {
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: 4px;
+}
+
+fieldset legend {
+    font-size: 1.1em;
+    padding: 0 10px;
+    width: auto;
+    border: none;
+}
+
+#image-list .image-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--light-gray);
+}
+#image-list .image-item:last-child {
+    border-bottom: none;
+}
+
+#image-list img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+#image-list .image-details {
+    flex: 1;
+}
+
+#image-list .image-details label {
+    font-size: 0.8em;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+#preview-frame {
+    width: 100%;
+    height: 70vh;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.cta-button {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--success-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.cta-button:hover:not(:disabled) {
+    background-color: #4a934a;
+}
+
+.cta-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.placeholder {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 4px;
+}
+
+@media (max-width: 992px) {
+    .editor-layout {
+        grid-template-columns: 1fr;
+    }
+} 
