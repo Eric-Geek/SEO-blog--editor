@@ -243,27 +243,29 @@ class SEOEditor {
             context: this.getImageContext(img)
         }));
 
-        return `作为SEO专家，请基于以下文章内容生成优化的SEO元数据。
+        return `作为一名专业的SEO内容优化师，请根据以下文章内容，为我生成精准的SEO元数据。
 
-文章内容：
+文章核心内容摘要:
 ${articleText}
 
-图片信息：
+图片信息:
 ${imagePrompts.map(img => `图片${img.index + 1}: ${img.src} (上下文: ${img.context})`).join('\n')}
 
-请生成以下JSON格式的优化建议：
+任务要求:
+请严格按照以下JSON格式和字符数限制进行输出。不要添加任何额外的注释或解释。
+
 {
-  "meta_description": "150-160字符的吸引人的描述",
-  "keywords": "5-10个相关关键词，逗号分隔",
+  "meta_description": "一个精准、吸引人的描述，严格控制在140到160个字符之间。",
+  "keywords": "一个关键词列表，以英文逗号分隔，总长度严格控制在100个字符以内。",
   "image_alts": [
-    { "index": 0, "alt": "描述性的alt文本" }
+    { "index": 0, "alt": "一个简洁且描述准确的alt文本" }
   ]
 }
 
-要求：
-1. meta_description要包含主要关键词，吸引点击
-2. keywords要选择搜索量高且相关的词
-3. alt文本要描述图片内容并包含相关关键词`;
+请务必遵守以下规则:
+1.  **Meta Description**: 长度必须在 140 到 160 个字符之间。内容需高度概括文章，并包含核心关键词。
+2.  **Keywords**: 所有关键词加起来的总字符数（包括逗号和空格）绝对不能超过 100 个字符。
+3.  **JSON格式**: 确保输出是严格有效的JSON对象，不包含任何其他文字。`;
     }
 
     getImageContext(img) {
@@ -273,9 +275,24 @@ ${imagePrompts.map(img => `图片${img.index + 1}: ${img.src} (上下文: ${img.
         return (prevText + ' ' + nextText).slice(0, 100);
     }
 
+    smartTruncate(str, maxLength) {
+        if (str.length <= maxLength) {
+            return str;
+        }
+    
+        let truncated = str.slice(0, maxLength);
+        const lastSpaceIndex = truncated.lastIndexOf(' ');
+    
+        if (lastSpaceIndex > 0) {
+            return truncated.slice(0, lastSpaceIndex);
+        } else {
+            return truncated;
+        }
+    }
+
     applyAiOptimizations(seoData) {
         if (seoData.meta_description) {
-            this.metaDescriptionInput.value = seoData.meta_description.slice(0, 160);
+            this.metaDescriptionInput.value = this.smartTruncate(seoData.meta_description, 160);
             this.handleMetaDescriptionInput();
         }
         
