@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const keywordsInput = document.getElementById('keywords');
     const keywordsCounter = document.getElementById('keywords-counter');
     const canonicalUrlInput = document.getElementById('canonical-url');
-    const pageWidthInput = document.getElementById('page-width');
     const ogTitleInput = document.getElementById('og-title');
     const ogDescriptionInput = document.getElementById('og-description');
     const ogImageInput = document.getElementById('og-image');
@@ -43,10 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     canonicalUrlInput.addEventListener('input', () => {
         updateLinkTag('canonical', canonicalUrlInput.value);
-        updatePreview();
-    });
-    pageWidthInput.addEventListener('input', () => {
-        updateStyleTag(pageWidthInput.value);
         updatePreview();
     });
     ogTitleInput.addEventListener('input', () => updateMetaTag('og:title', ogTitleInput.value, 'property'));
@@ -162,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const seoData = JSON.parse(data.choices[0].message.content);
 
             // Populate fields with AI data
-            metaDescriptionInput.value = seoData.meta_description || '';
+            metaDescriptionInput.value = (seoData.meta_description || '').slice(0, 160);
             keywordsInput.value = seoData.keywords || '';
             ogTitleInput.value = seoData.og_title || '';
             ogDescriptionInput.value = seoData.og_description || '';
@@ -229,9 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ogTitleInput.value = getMetaTagContent('og:title', 'property') || processedDoc.title || '';
         ogDescriptionInput.value = getMetaTagContent('og:description', 'property') || metaDescriptionInput.value;
         ogImageInput.value = getMetaTagContent('og:image', 'property') || findFirstImageUrl();
-        
-        // 6. Page Width
-        updateStyleTag(pageWidthInput.value);
         
         // Enable AI button if file is loaded
         aiOptimizeBtn.disabled = false;
@@ -340,18 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         link.setAttribute('href', href);
     }
-    
-    function updateStyleTag(maxWidth) {
-        if (!processedDoc) return;
-        const styleId = 'seo-editor-styles';
-        let styleTag = processedDoc.getElementById(styleId);
-        if (!styleTag) {
-            styleTag = processedDoc.createElement('style');
-            styleTag.id = styleId;
-            processedDoc.head.appendChild(styleTag);
-        }
-        styleTag.textContent = `body { max-width: ${maxWidth}; margin: 0 auto; padding: 20px; }`;
-    }
 
     function updatePreview() {
         if (processedDoc) {
@@ -371,6 +351,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 imgEl.setAttribute('alt', input.value);
             }
         });
+
+        // Remove editor-specific styles before saving
+        const editorStyles = processedDoc.getElementById('seo-editor-styles');
+        if (editorStyles) {
+            editorStyles.remove();
+        }
 
         updatePreview(); // Ensure preview is up to date before download
 
