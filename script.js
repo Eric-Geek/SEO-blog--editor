@@ -179,9 +179,8 @@ class SEOEditor {
 
         try {
             const articleText = this.extractArticleText();
-            const images = Array.from(this.processedDoc.querySelectorAll('img'));
             
-            const prompt = this.buildAiPrompt(articleText, images);
+            const prompt = this.buildAiPrompt(articleText);
             
             this.updateAiStatus('正在生成SEO优化建议...');
             
@@ -236,30 +235,18 @@ class SEOEditor {
         return text.trim();
     }
 
-    buildAiPrompt(articleText, images) {
-        const imagePrompts = images.map((img, index) => ({
-            index,
-            src: img.src || img.getAttribute('src') || `image-${index}`,
-            context: this.getImageContext(img)
-        }));
-
+    buildAiPrompt(articleText) {
         return `作为一名专业的SEO内容优化师，请根据以下文章内容，为我生成精准的SEO元数据。
 
 文章核心内容摘要:
 ${articleText}
-
-图片信息:
-${imagePrompts.map(img => `图片${img.index + 1}: ${img.src} (上下文: ${img.context})`).join('\n')}
 
 任务要求:
 请严格按照以下JSON格式和字符数限制进行输出。不要添加任何额外的注释或解释。
 
 {
   "meta_description": "一个精准、吸引人的描述，严格控制在140到160个字符之间。",
-  "keywords": "一个关键词列表，以英文逗号分隔，总长度严格控制在100个字符以内。",
-  "image_alts": [
-    { "index": 0, "alt": "一个简洁且描述准确的alt文本" }
-  ]
+  "keywords": "一个关键词列表，以英文逗号分隔，总长度严格控制在100个字符以内。"
 }
 
 请务必遵守以下规则:
@@ -299,16 +286,6 @@ ${imagePrompts.map(img => `图片${img.index + 1}: ${img.src} (上下文: ${img.
         if (seoData.keywords) {
             this.keywordsInput.value = seoData.keywords.slice(0, 100);
             this.handleKeywordsInput();
-        }
-        
-        if (seoData.image_alts && Array.isArray(seoData.image_alts)) {
-            seoData.image_alts.forEach(imgData => {
-                const altInput = document.getElementById(`alt-text-${imgData.index}`);
-                if (altInput) {
-                    altInput.value = imgData.alt;
-                    altInput.dispatchEvent(new Event('input'));
-                }
-            });
         }
         
         this.updatePreview();
