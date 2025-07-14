@@ -3,90 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEO 文章编辑器</title>
+    <meta name="description" content="免费在线SEO文章编辑器，支持AI一键优化Meta标签、关键词和图片Alt文本，提升网站搜索引擎排名">
+    <meta name="keywords" content="SEO优化,文章编辑器,Meta标签,AI优化,搜索引擎优化">
+    <title>SEO文章编辑器 - AI智能优化您的网页内容</title>
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://api.deepseek.com">
+    
+    <!-- Optimized font loading -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA support -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4a90e2">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>SEO 文章编辑器</h1>
-            <p>上传您的HTML文件，自动优化并编辑SEO相关标签。</p>
-            <button id="settings-btn" class="icon-btn" title="设置API Key">⚙️</button>
+            <h1>SEO文章编辑器</h1>
+            <p>上传您的HTML文件，自动优化并编辑SEO相关标签</p>
+            <button id="settings-btn" class="icon-btn" title="设置API Key" aria-label="打开设置">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3"></path>
+                </svg>
+            </button>
         </header>
 
         <main class="editor-layout">
-            <div class="controls">
+            <aside class="controls" role="complementary">
                 <h2>控制面板</h2>
 
                 <div class="control-group file-upload-group">
-                    <label for="file-input">1. 上传文章HTML文件</label>
-                    <input type="file" id="file-input" accept=".html,.htm">
+                    <label for="file-input">
+                        <span class="step-number">1</span>
+                        上传文章HTML文件
+                    </label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="file-input" accept=".html,.htm" aria-describedby="file-help">
+                        <div class="file-input-display">
+                            <svg class="upload-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span id="file-name">选择文件或拖拽到此处</span>
+                        </div>
+                    </div>
+                    <small id="file-help" class="help-text">支持 .html 和 .htm 格式</small>
                 </div>
 
                 <div class="control-group">
-                    <button id="ai-optimize-btn" class="ai-button" disabled>
-                        <span class="ai-icon">✨</span> AI 一键优化
-                        <div class="spinner" style="display: none;"></div>
+                    <button id="ai-optimize-btn" class="ai-button" disabled aria-busy="false">
+                        <span class="ai-icon">✨</span>
+                        <span class="button-text">AI 一键优化</span>
+                        <div class="spinner" hidden></div>
                     </button>
+                    <div id="ai-status" class="status-message" hidden></div>
                 </div>
 
                 <div class="control-group">
-                    <label for="meta-description">2. Meta Description (140-160字符)</label>
-                    <textarea id="meta-description" rows="4" maxlength="160"></textarea>
-                    <div class="char-counter" id="description-counter">0 / 160</div>
-                </div>
-
-                <div class="control-group">
-                    <label for="keywords">3. Keywords (最多100字符)</label>
-                    <input type="text" id="keywords" maxlength="100">
-                    <div class="char-counter" id="keywords-counter">0 / 100</div>
-                </div>
-
-                <div class="control-group">
-                    <label for="canonical-url">4. Canonical URL</label>
-                    <input type="text" id="canonical-url" placeholder="例如: https://example.com/original-article">
-                </div>
-                
-                <fieldset class="control-group">
-                    <legend>5. 社交媒体 Meta 标签 (Open Graph)</legend>
-                    <label for="og-title">OG Title:</label>
-                    <input type="text" id="og-title" value="GlobalGPT Free AI Tools : All-in-One Access to ChatGPT" disabled>
-                    <label for="og-description">OG Description:</label>
-                    <textarea id="og-description" rows="4" disabled>Explore GlobalGPT’s free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.</textarea>
-                    <label for="og-image">OG Image URL:</label>
-                    <input type="text" id="og-image" placeholder="图片的绝对URL" value="https://www.glbgpt.com/home" disabled>
-                </fieldset>
-                
-                <div id="image-alt-editor" class="control-group">
-                    <h3>6. 图片 Alt 文本</h3>
-                    <div id="image-list">
-                        <p class="placeholder">上传文件后，这里会显示图片列表以供编辑。</p>
+                    <label for="meta-description">
+                        <span class="step-number">2</span>
+                        Meta Description
+                        <span class="label-hint">(140-160字符)</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <textarea id="meta-description" rows="4" maxlength="160" 
+                                  placeholder="简洁描述页面内容，吸引用户点击"></textarea>
+                        <div class="char-counter" id="description-counter">
+                            <span class="current">0</span> / <span class="max">160</span>
+                        </div>
                     </div>
                 </div>
 
-                <button id="download-btn" class="cta-button" disabled>下载优化后的文件</button>
+                <div class="control-group">
+                    <label for="keywords">
+                        <span class="step-number">3</span>
+                        Keywords
+                        <span class="label-hint">(最多100字符)</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text" id="keywords" maxlength="100" 
+                               placeholder="关键词1, 关键词2, 关键词3">
+                        <div class="char-counter" id="keywords-counter">
+                            <span class="current">0</span> / <span class="max">100</span>
+                        </div>
+                    </div>
+                </div>
 
-            </div>
-            <div class="preview">
-                <h2>实时预览</h2>
-                <iframe id="preview-frame" title="文章预览"></iframe>
-            </div>
+                <div class="control-group">
+                    <label for="canonical-url">
+                        <span class="step-number">4</span>
+                        Canonical URL
+                    </label>
+                    <input type="url" id="canonical-url" 
+                           placeholder="https://example.com/original-article">
+                </div>
+                
+                <fieldset class="control-group og-fieldset">
+                    <legend>
+                        <span class="step-number">5</span>
+                        社交媒体 Meta 标签 (Open Graph)
+                    </legend>
+                    <div class="og-preview">
+                        <img src="https://via.placeholder.com/1200x630/4a90e2/ffffff?text=GlobalGPT" 
+                             alt="OG预览图" class="og-preview-image">
+                        <div class="og-preview-text">
+                            <div class="og-title">GlobalGPT Free AI Tools : All-in-One Access to ChatGPT</div>
+                            <div class="og-description">Explore GlobalGPT's free AI models and tools...</div>
+                        </div>
+                    </div>
+                </fieldset>
+                
+                <div id="image-alt-editor" class="control-group">
+                    <h3>
+                        <span class="step-number">6</span>
+                        图片 Alt 文本
+                    </h3>
+                    <div id="image-list">
+                        <p class="placeholder">上传文件后，这里会显示图片列表以供编辑</p>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="download-btn" class="cta-button" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        下载优化后的文件
+                    </button>
+                </div>
+            </aside>
+
+            <section class="preview" role="main">
+                <div class="preview-header">
+                    <h2>实时预览</h2>
+                    <div class="preview-actions">
+                        <button id="preview-mobile" class="preview-toggle" title="移动端预览">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                <line x1="12" y1="18" x2="12" y2="18"></line>
+                            </svg>
+                        </button>
+                        <button id="preview-desktop" class="preview-toggle active" title="桌面端预览">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="preview-container">
+                    <iframe id="preview-frame" title="文章预览" sandbox="allow-same-origin allow-scripts"></iframe>
+                </div>
+            </section>
         </main>
     </div>
 
-    <div id="settings-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h2>设置 API Key</h2>
-            <p>请输入您的 DeepSeek API Key。您的密钥将仅保存在您的浏览器中，不会上传到任何服务器。</p>
-            <label for="api-key-input">DeepSeek API Key:</label>
-            <input type="password" id="api-key-input" placeholder="sk-...">
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay" hidden>
+        <div class="modal-content" role="dialog" aria-labelledby="modal-title" aria-describedby="modal-description">
+            <h2 id="modal-title">设置 API Key</h2>
+            <p id="modal-description">请输入您的 DeepSeek API Key。您的密钥将仅保存在您的浏览器中，不会上传到任何服务器。</p>
+            
+            <div class="modal-body">
+                <label for="api-key-input">DeepSeek API Key:</label>
+                <div class="api-key-input-wrapper">
+                    <input type="password" id="api-key-input" placeholder="sk-..." autocomplete="off">
+                    <button id="toggle-api-key" class="toggle-password" type="button" aria-label="显示/隐藏密码">
+                        <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <small class="help-text">
+                    还没有API Key？<a href="https://platform.deepseek.com/" target="_blank" rel="noopener">获取免费API Key</a>
+                </small>
+            </div>
+            
             <div class="modal-actions">
-                <button id="save-api-key-btn">保存</button>
-                <button id="cancel-api-key-btn">取消</button>
+                <button id="save-api-key-btn" class="primary-button">保存</button>
+                <button id="cancel-api-key-btn" class="secondary-button">取消</button>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="script.js" defer></script>
 </body>
-</html> 
+</html>
