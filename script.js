@@ -44,9 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLinkTag('canonical', canonicalUrlInput.value);
         updatePreview();
     });
-    ogTitleInput.addEventListener('input', () => updateMetaTag('og:title', ogTitleInput.value, 'property'));
-    ogDescriptionInput.addEventListener('input', () => updateMetaTag('og:description', ogDescriptionInput.value, 'property'));
-    ogImageInput.addEventListener('input', () => updateMetaTag('og:image', ogImageInput.value, 'property'));
 
     // Settings Modal Listeners
     settingsBtn.addEventListener('click', () => {
@@ -114,8 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
             {
               "meta_description": "一段140到160个字符的文章摘要，内容要吸引人点击。",
               "keywords": "一个包含5-7个最相关关键词的字符串，用英文逗号分隔。",
-              "og_title": "一个适合在社交媒体分享的、引人注目的标题。",
-              "og_description": "一段与meta_description类似但可以更具对话性的社交媒体描述。",
               "image_alts": [
                 { "src": "图片的src属性值", "alt": "为这张图片生成的描述性alt文本" }
               ]
@@ -159,8 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Populate fields with AI data
             metaDescriptionInput.value = (seoData.meta_description || '').slice(0, 160);
             keywordsInput.value = seoData.keywords || '';
-            ogTitleInput.value = seoData.og_title || '';
-            ogDescriptionInput.value = seoData.og_description || '';
             
             if (seoData.image_alts && Array.isArray(seoData.image_alts)) {
                 seoData.image_alts.forEach(imgData => {
@@ -185,8 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Trigger updates to reflect changes in character counters and preview
             metaDescriptionInput.dispatchEvent(new Event('input'));
             keywordsInput.dispatchEvent(new Event('input'));
-            ogTitleInput.dispatchEvent(new Event('input'));
-            ogDescriptionInput.dispatchEvent(new Event('input'));
             updatePreview();
 
 
@@ -220,10 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Image Alt Text
         processImages();
 
-        // 5. Social Media Tags
-        ogTitleInput.value = getMetaTagContent('og:title', 'property') || processedDoc.title || '';
-        ogDescriptionInput.value = getMetaTagContent('og:description', 'property') || metaDescriptionInput.value;
-        ogImageInput.value = getMetaTagContent('og:image', 'property') || findFirstImageUrl();
+        // 5. Social Media Tags - Hardcoded
+        setHardcodedOgTags();
         
         // Enable AI button if file is loaded
         aiOptimizeBtn.disabled = false;
@@ -239,6 +228,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function getLinkTagHref(rel) {
         const link = processedDoc.querySelector(`link[rel="${rel}"]`);
         return link ? link.getAttribute('href') : '';
+    }
+
+    function setHardcodedOgTags() {
+        if (!processedDoc) return;
+        const ogData = {
+            'og:title': 'GlobalGPT Free AI Tools : All-in-One Access to ChatGPT',
+            'og:description': 'Explore GlobalGPT’s free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.',
+            'og:image': 'https://www.glbgpt.com/home'
+        };
+
+        for (const [property, content] of Object.entries(ogData)) {
+            updateMetaTag(property, content, 'property');
+        }
+
+        // Also update the disabled input fields just in case
+        ogTitleInput.value = ogData['og:title'];
+        ogDescriptionInput.value = ogData['og:description'];
+        ogImageInput.value = ogData['og:image'];
     }
 
     function generateMetaDescription() {
@@ -351,6 +358,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 imgEl.setAttribute('alt', input.value);
             }
         });
+
+        // Ensure hardcoded OG tags are set before download
+        setHardcodedOgTags();
 
         // Remove editor-specific styles before saving
         const editorStyles = processedDoc.getElementById('seo-editor-styles');
