@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEO 文章编辑器</title>
+    <title>Notion 文章 SEO 优化工具</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>SEO 文章编辑器</h1>
-            <p>上传您的HTML文件，自动优化并编辑SEO相关标签。</p>
+            <h1>Notion 文章 SEO 优化工具</h1>
+            <p>上传从 Notion 导出的 ZIP 包，自动优化 SEO 并生成新的 ZIP 包。</p>
             <button id="settings-btn" class="icon-btn" title="设置API Key">⚙️</button>
         </header>
 
@@ -19,8 +19,8 @@
                 <h2>控制面板</h2>
 
                 <div class="control-group file-upload-group">
-                    <label for="file-input">1. 上传文章HTML文件</label>
-                    <input type="file" id="file-input" accept=".html,.htm">
+                    <label for="file-input">1. 上传 Notion 导出的 ZIP 包</label>
+                    <input type="file" id="file-input" accept=".zip">
                 </div>
 
                 <div class="control-group">
@@ -60,11 +60,11 @@
                 <div id="image-alt-editor" class="control-group">
                     <h3>6. 图片 Alt 文本</h3>
                     <div id="image-list">
-                        <p class="placeholder">上传文件后，这里会显示图片列表以供编辑。</p>
+                        <p class="placeholder">上传 ZIP 包后，这里会显示图片列表以供编辑。</p>
                     </div>
                 </div>
 
-                <button id="download-btn" class="cta-button" disabled>下载优化后的文件</button>
+                <button id="download-btn" class="cta-button" disabled>生成并下载优化后的ZIP包</button>
 
             </div>
             <div class="preview">
@@ -87,6 +87,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html> 
