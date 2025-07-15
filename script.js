@@ -185,6 +185,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Remove specific CSS rules as requested
             removeUnwantedCss(processedDoc);
 
+            // === 生成并注入目录 ===
+            const tocData = generateTableOfContents(processedDoc);
+            if (tocData.items.length > 0) {
+                injectTableOfContents(processedDoc, tocData);
+            }
+
             populateEditorFields();
             updatePreview();
 
@@ -336,7 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = data.candidates[0].content.parts[0].text;
         return JSON.parse(content);
     }
-
 
     function populateEditorFields() {
         if (!processedDoc) return;
@@ -632,6 +637,371 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ===== 新增：HTML处理及目录生成函数 =====
+    async function processHTML(content, seoData) {
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(content, 'text/html');
+            // 现有的SEO处理代码...
+            // ===== 新增：生成文章目录 =====
+            const tocData = generateTableOfContents(doc);
+            if (tocData.items.length > 0) {
+                injectTableOfContents(doc, tocData);
+            }
+            // 序列化并返回
+            const serializer = new XMLSerializer();
+            return serializer.serializeToString(doc);
+        } catch (error) {
+            console.error('处理HTML时出错:', error);
+            throw error;
+        }
+    }
+
+    function generateTableOfContents(doc) {
+        const h2Elements = doc.querySelectorAll('h2');
+        const tocItems = [];
+        h2Elements.forEach((h2, index) => {
+            // 为每个H2添加唯一ID
+            const id = `section-${index + 1}`;
+            h2.setAttribute('id', id);
+            // 收集目录项
+            tocItems.push({
+                id: id,
+                text: h2.textContent.trim()
+            });
+        });
+        return {
+            items: tocItems
+        };
+    }
+
+    function injectTOCStyles(doc) {
+        const style = doc.createElement('style');
+        style.textContent = `
+        /* 文章包装器 */
+        .article-wrapper {
+            display: flex;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            gap: 60px;
+            position: relative;
+        }
+        
+        /* 目录容器 - 现代简约风格 */
+        .toc-container {
+            position: sticky;
+            top: 150px; /* 调整垂直位置，使其更居中 */
+            width: 260px;
+            max-width: 260px;
+            min-width: 200px;
+            height: fit-content;
+            max-height: calc(100vh - 180px); /* 相应调整最大高度 */
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 10;
+        }
+        
+        /* 目录标题 - CONTENTS */
+        .toc-title {
+            margin: 0 0 24px 0;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #6b7280;
+            padding-left: 16px;
+        }
+        
+        /* 目录列表容器 */
+        .toc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .toc-list li {
+            margin: 0;
+            position: relative;
+        }
+        
+        /* 目录链接 - 优化后的样式 */
+        .toc-link {
+            display: block;
+            color: #6b7280;
+            text-decoration: none;
+            padding: 10px 16px;
+            margin: 4px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            border-left: 3px solid transparent;
+            border-radius: 6px;
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* 悬停效果 - 更清晰的反馈 */
+        .toc-link:hover {
+            color: #111827;
+            background-color: #f3f4f6;
+            transform: translateX(4px);
+        }
+        
+        /* 当前激活的链接样式 - 已根据要求移除所有特殊效果 */
+        .toc-link.active {
+            /* No special styling */
+        }
+        
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            max-width: 720px;
+        }
+        
+        /* H2标题样式优化 */
+        h2[id^="section-"] {
+            scroll-margin-top: 80px;
+            position: relative;
+        }
+        
+        /* 为标题添加锚点链接图标 */
+        h2[id^="section-"]:hover::before {
+            content: '#';
+            position: absolute;
+            left: -24px;
+            color: #6b7280;
+            font-weight: normal;
+        }
+        
+        /* 美化滚动条 */
+        .toc-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .toc-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .toc-container::-webkit-scrollbar-thumb {
+            background: #e5e7eb;
+            border-radius: 2px;
+        }
+        
+        .toc-container::-webkit-scrollbar-thumb:hover {
+            background: #d1d5db;
+        }
+        
+        /* 添加淡入动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .toc-container {
+            animation: fadeIn 0.5s ease;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .article-wrapper {
+                gap: 40px;
+            }
+            
+            .toc-container {
+                width: 220px;
+                min-width: 180px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .toc-container {
+                display: none;
+            }
+            
+            .article-wrapper {
+                gap: 0;
+            }
+            
+            .main-content {
+                max-width: 100%;
+            }
+        }
+        
+        /* 添加阅读进度条（可选） */
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(to right, #2563eb, #3b82f6);
+            z-index: 1000;
+            transition: width 0.3s ease;
+        }
+    `;
+        doc.head.appendChild(style);
+    }
+
+    function injectTableOfContents(doc, tocData) {
+        // 创建目录容器
+        const tocContainer = doc.createElement('div');
+        tocContainer.className = 'toc-container';
+        // 创建目录标题
+        const tocTitle = doc.createElement('div');
+        tocTitle.className = 'toc-title';
+        tocTitle.textContent = 'CONTENTS';
+        tocContainer.appendChild(tocTitle);
+        // 创建目录列表
+        const tocList = doc.createElement('ul');
+        tocList.className = 'toc-list';
+        tocData.items.forEach(item => {
+            const li = doc.createElement('li');
+            const a = doc.createElement('a');
+            a.href = `#${item.id}`;
+            a.textContent = item.text;
+            a.className = 'toc-link';
+            li.appendChild(a);
+            tocList.appendChild(li);
+        });
+        tocContainer.appendChild(tocList);
+        // 创建文章容器包装器
+        const wrapper = doc.createElement('div');
+        wrapper.className = 'article-wrapper';
+        // 创建主内容区域
+        const mainContent = doc.createElement('div');
+        mainContent.className = 'main-content';
+        // 将原body内容移到主内容区域
+        while (doc.body.firstChild) {
+            mainContent.appendChild(doc.body.firstChild);
+        }
+        // 重新组织页面结构
+        wrapper.appendChild(tocContainer);
+        wrapper.appendChild(mainContent);
+        doc.body.appendChild(wrapper);
+        // 注入CSS样式
+        injectTOCStyles(doc);
+        // 注入JavaScript功能
+        injectTOCScript(doc);
+        // 可选：添加阅读进度条
+        addReadingProgressBar(doc);
+    }
+
+    function injectTOCScript(doc) {
+        const script = doc.createElement('script');
+        script.textContent = `
+            (function() {
+                // 平滑滚动功能
+                document.querySelectorAll('.toc-link').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const targetId = this.getAttribute('href').substring(1);
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            // 使用更流畅的滚动效果
+                            targetElement.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                            
+                            // 添加URL哈希
+                            history.pushState(null, null, '#' + targetId);
+                        }
+                    });
+                });
+                
+                // 滚动高亮当前章节
+                const sections = document.querySelectorAll('h2[id^="section-"]');
+                const tocLinks = document.querySelectorAll('.toc-link');
+                let currentActiveLink = null;
+                
+                function highlightCurrentSection() {
+                    const scrollPosition = window.scrollY + 100;
+                    let activeSection = null;
+                    
+                    // 找到当前可见的章节
+                    for (let i = sections.length - 1; i >= 0; i--) {
+                        if (sections[i].offsetTop <= scrollPosition) {
+                            activeSection = sections[i];
+                            break;
+                        }
+                    }
+                    
+                    // 更新高亮状态
+                    tocLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (activeSection && link.getAttribute('href') === '#' + activeSection.id) {
+                            link.classList.add('active');
+                            currentActiveLink = link;
+                            
+                            // 确保当前链接在目录容器内可见
+                            const tocContainer = document.querySelector('.toc-container');
+                            const linkRect = link.getBoundingClientRect();
+                            const containerRect = tocContainer.getBoundingClientRect();
+                            
+                            if (linkRect.top < containerRect.top || linkRect.bottom > containerRect.bottom) {
+                                link.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                            }
+                        }
+                    });
+                }
+                
+                // 优化滚动事件处理
+                let scrollTimer;
+                let lastScrollY = window.scrollY;
+                
+                function handleScroll() {
+                    const currentScrollY = window.scrollY;
+                    
+                    // 只在滚动方向改变或停止时更新
+                    if (Math.abs(currentScrollY - lastScrollY) > 5) {
+                        if (scrollTimer) clearTimeout(scrollTimer);
+                        scrollTimer = setTimeout(() => {
+                            highlightCurrentSection();
+                            lastScrollY = currentScrollY;
+                        }, 50);
+                    }
+                }
+                
+                window.addEventListener('scroll', handleScroll, { passive: true });
+                
+                // 初始化高亮
+                setTimeout(highlightCurrentSection, 100);
+                
+                // 添加阅读进度条（可选功能）
+                function updateReadingProgress() {
+                    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+                    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                    const scrolled = (winScroll / height) * 100;
+                    
+                    const progressBar = document.querySelector('.reading-progress');
+                    if (progressBar) {
+                        progressBar.style.width = scrolled + '%';
+                    }
+                }
+                
+                // 如果需要进度条，取消下面的注释
+                window.addEventListener('scroll', updateReadingProgress, { passive: true });
+            })();
+        `;
+        doc.body.appendChild(script);
+    }
+
+    // 可选：添加阅读进度条
+    function addReadingProgressBar(doc) {
+        const progressBar = doc.createElement('div');
+        progressBar.className = 'reading-progress';
+        progressBar.style.width = '0%';
+        doc.body.insertBefore(progressBar, doc.body.firstChild);
+    }
+
     function toggleLoading(isLoading) {
         if (isLoading) {
             spinner.style.display = 'block';
@@ -643,4 +1013,4 @@ document.addEventListener('DOMContentLoaded', () => {
             aiOptimizeBtn.querySelector('.ai-icon').style.display = 'inline-block';
         }
     }
-}); 
+});
