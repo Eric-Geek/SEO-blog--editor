@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageListDiv = document.getElementById('image-list');
     const downloadBtn = document.getElementById('download-btn');
     const previewFrame = document.getElementById('preview-frame');
-    
+
     // AI and Settings elements
     const settingsBtn = document.getElementById('settings-btn');
     const aiOptimizeBtn = document.getElementById('ai-optimize-btn');
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners ---
     fileInput.addEventListener('change', handleFileSelect);
     downloadBtn.addEventListener('click', handleDownload);
-
+    
     // AI and Settings Listeners
     aiOptimizeBtn.addEventListener('click', handleAiOptimization);
     settingsBtn.addEventListener('click', () => {
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     img.setAttribute('src', imageFiles.get(originalSrc));
                 }
             });
-
+            
             populateEditorFields();
             updatePreview();
             downloadBtn.disabled = false;
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resetState();
         }
     }
-    
+
     async function handleAiOptimization() {
         const apiKey = localStorage.getItem('deepseek_api_key');
         if (!apiKey) {
@@ -264,12 +264,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let content = getMetaTagContent(property, 'property');
             if (!content) {
                 content = defaultOgData[property];
-                updateMetaTag(property, content, 'property');
-            }
+            updateMetaTag(property, content, 'property');
+        }
             inputElement.value = content;
             inputElement.disabled = false;
-        }
-
+    }
+    
         // Image Alt Text
         processImages();
     }
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Find corresponding img tag in the doc to get existing alt text
             const imgInDoc = processedDoc.querySelector(`img[src="${blobUrl}"]`);
             let altText = (imgInDoc ? imgInDoc.getAttribute('alt') : '') || generateAltText(originalPath);
-
+            
             const imageItem = document.createElement('div');
             imageItem.className = 'image-item';
             imageItem.innerHTML = `
@@ -348,11 +348,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Get the last part of the path
                     slugBase = pathname.substring(pathname.lastIndexOf('/') + 1);
                 }
-            } catch (e) {
+        } catch (e) {
                 // The input might not be a full, valid URL, so treat as a string
                 const urlString = canonicalUrl.replace(/\/$/g, ''); // remove trailing slash
                 slugBase = urlString.substring(urlString.lastIndexOf('/') + 1);
-            }
+        }
         }
         
         // Fallback to OG title if slug base is still empty
@@ -454,18 +454,18 @@ document.addEventListener('DOMContentLoaded', () => {
             previewFrame.srcdoc = serializedHtml;
         }
     }
-
+    
     function getMetaTagContent(name, attribute = 'name') {
         if (!processedDoc) return '';
         const meta = processedDoc.querySelector(`meta[${attribute}="${name}"]`);
         return meta ? meta.getAttribute('content') : '';
-    }
+            }
     
     function getLinkTagHref(rel) {
         if (!processedDoc) return '';
         const link = processedDoc.querySelector(`link[rel="${rel}"]`);
         return link ? link.getAttribute('href') : '';
-    }
+        }
 
     function generateAltText(src) {
         if (!src) return '';
