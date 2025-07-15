@@ -459,18 +459,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const finalSlug = generateSlug(slugBase);
         
+        // --- 创建基于 Canonical URL 的图片文件夹名称 ---
+        const imageFolderName = `${finalSlug}-img`;
+        
+        // --- 更新 HTML 文档中的图片路径 ---
+        const docClone = processedDoc.cloneNode(true);
+        docClone.querySelectorAll('img').forEach(img => {
+            const originalSrc = img.getAttribute('src');
+            if (originalSrc) {
+                // 提取原始文件名（去除原始文件夹路径）
+                const fileName = originalSrc.split('/').pop();
+                // 设置新的图片路径
+                img.setAttribute('src', `${imageFolderName}/${fileName}`);
+            }
+        });
+        
         // 1. Add modified HTML
-        const finalHtml = '<!DOCTYPE html>\n' + processedDoc.documentElement.outerHTML;
+        const finalHtml = '<!DOCTYPE html>\n' + docClone.documentElement.outerHTML;
         newZip.file(`index.html`, finalHtml);
 
-        // 2. Add images from original zip
+        // 2. Add images from original zip with new folder structure
         const imageAddPromises = [];
         for (const originalPath of imageFiles.keys()) {
             const file = originalZip.file(originalPath);
             if (file) {
                 imageAddPromises.push(
                     file.async('uint8array').then(data => {
-                        newZip.file(originalPath, data);
+                        // 提取文件名并创建新路径
+                        const fileName = originalPath.split('/').pop();
+                        const newPath = `${imageFolderName}/${fileName}`;
+                        newZip.file(newPath, data);
                     })
                 );
             }
@@ -553,7 +571,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // Replace src with blob URLs only on the preview clone
             previewDoc.querySelectorAll('img').forEach(img => {
                 const originalSrc = decodeURIComponent(img.getAttribute('src'));
-                const blobUrl = imageFiles.get(originalSrc);
+                // 尝试直接匹配原始路径
+                let blobUrl = imageFiles.get(originalSrc);
+                
+                // 如果没找到，尝试匹配文件名
+                if (!blobUrl) {
+                    const fileName = originalSrc.split('/').pop();
+                    // 遍历所有图片文件找到匹配的文件名
+                    for (const [path, url] of imageFiles.entries()) {
+                        if (path.split('/').pop() === fileName) {
+                            blobUrl = url;
+                            break;
+                        }
+                    }
+                }
+                
                 if (blobUrl) {
                     img.setAttribute('src', blobUrl);
                 }
