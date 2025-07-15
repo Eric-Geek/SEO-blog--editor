@@ -117,6 +117,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Main Functions ---
 
+    function removeUnwantedCss(doc) {
+        if (!doc) return;
+        const styleTags = doc.querySelectorAll('style');
+        styleTags.forEach(styleTag => {
+            let cssText = styleTag.innerHTML;
+            // This regex finds all `body {...}` blocks.
+            const bodyRegex = /(body\s*\{)([\s\S]*?)(\})/g;
+    
+            cssText = cssText.replace(bodyRegex, (match, opening, content, closing) => {
+                const lines = content.split('\n');
+                const newLines = lines.filter(line => {
+                    const trimmedLine = line.trim();
+                    const isMarginLine = trimmedLine === 'margin: 2em auto;';
+                    const isMaxWidthLine = trimmedLine === 'max-width: 900px;';
+                    return !isMarginLine && !isMaxWidthLine;
+                });
+                let newContent = newLines.join('\n');
+                return opening + newContent + closing;
+            });
+            styleTag.innerHTML = cssText;
+        });
+    }
+
     async function handleFileSelect(event) {
         const file = event.target.files[0];
         if (!file || !file.name.endsWith('.zip')) {
@@ -159,6 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const parser = new DOMParser();
             processedDoc = parser.parseFromString(htmlFileInfo.content, 'text/html');
             
+            // Remove specific CSS rules as requested
+            removeUnwantedCss(processedDoc);
+
             // Replace relative image paths with blob URLs for preview
             processedDoc.querySelectorAll('img').forEach(img => {
                 const originalSrc = decodeURIComponent(img.getAttribute('src'));
