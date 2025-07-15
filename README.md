@@ -26,7 +26,7 @@
 ## 🚀 如何使用
 
 1.  **上传文件**: 点击“上传 Notion 导出的 ZIP 包”按钮选择文件。
-2.  **设置API Key (可选)**: 如果您想使用 AI 功能，请点击右上角的 ⚙️ 图标，输入您的 DeepSeek API Key。
+2.  **设置API Key (可选)**: 如果您想使用 AI 功能，请点击右上角的 ⚙️ 图标，输入您的 DeepSeek, Google, OpenAI, MoonShot API Key。
 3.  **进行优化**:
     - 点击“✨ AI 一键优化”按钮，让 AI 为您生成描述和关键词。
     - 手动检查并调整所有 SEO 相关的输入框。
