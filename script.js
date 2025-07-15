@@ -12,15 +12,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageListDiv = document.getElementById('image-list');
     const downloadBtn = document.getElementById('download-btn');
     const previewFrame = document.getElementById('preview-frame');
-
+    
     // AI and Settings elements
     const settingsBtn = document.getElementById('settings-btn');
+    const aiProviderSelect = document.getElementById('ai-provider-select');
     const aiOptimizeBtn = document.getElementById('ai-optimize-btn');
     const settingsModal = document.getElementById('settings-modal');
-    const apiKeyInput = document.getElementById('api-key-input');
     const saveApiKeyBtn = document.getElementById('save-api-key-btn');
     const cancelApiKeyBtn = document.getElementById('cancel-api-key-btn');
     const spinner = aiOptimizeBtn.querySelector('.spinner');
+
+    const apiKeyInputs = {
+        deepseek: document.getElementById('deepseek-api-key-input'),
+        openai: document.getElementById('openai-api-key-input'),
+        gemini: document.getElementById('gemini-api-key-input'),
+        moonshot: document.getElementById('moonshot-api-key-input'),
+    };
+    
+    // New modal elements
+    const modalNavButtons = document.querySelectorAll('.modal-nav .nav-button');
+    const apiKeyGroups = document.querySelectorAll('.modal-main-content .api-key-group');
 
     // --- App State ---
     let originalZip = null;
@@ -32,19 +43,49 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners ---
     fileInput.addEventListener('change', handleFileSelect);
     downloadBtn.addEventListener('click', handleDownload);
-    
+
     // AI and Settings Listeners
     aiOptimizeBtn.addEventListener('click', handleAiOptimization);
     settingsBtn.addEventListener('click', () => {
         settingsModal.style.display = 'flex';
-        apiKeyInput.value = localStorage.getItem('deepseek_api_key') || '';
+        // Load saved keys into modal
+        for (const provider in apiKeyInputs) {
+            apiKeyInputs[provider].value = localStorage.getItem(`${provider}_api_key`) || '';
+        }
+        // Set the first tab as active by default
+        showApiKeyGroup('deepseek'); 
     });
+    
     cancelApiKeyBtn.addEventListener('click', () => settingsModal.style.display = 'none');
+    
     saveApiKeyBtn.addEventListener('click', () => {
-        localStorage.setItem('deepseek_api_key', apiKeyInput.value);
+        // Save all keys from modal to localStorage
+        for (const provider in apiKeyInputs) {
+            if (apiKeyInputs[provider].value) { // Only save if there is a value
+                localStorage.setItem(`${provider}_api_key`, apiKeyInputs[provider].value);
+            } else {
+                localStorage.removeItem(`${provider}_api_key`); // Remove if empty
+            }
+        }
         settingsModal.style.display = 'none';
-        alert('API Key已保存。');
+        alert('API Keys 已更新。');
     });
+
+    modalNavButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const provider = button.dataset.provider;
+            showApiKeyGroup(provider);
+        });
+    });
+    
+    function showApiKeyGroup(provider) {
+        modalNavButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.provider === provider);
+        });
+        apiKeyGroups.forEach(group => {
+            group.classList.toggle('active', group.dataset.providerContent === provider);
+        });
+    }
 
     // Add listeners to SEO inputs to update the document and preview in real-time
     metaDescriptionInput.addEventListener('input', () => {
@@ -125,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     img.setAttribute('src', imageFiles.get(originalSrc));
                 }
             });
-            
+
             populateEditorFields();
             updatePreview();
             downloadBtn.disabled = false;
@@ -137,11 +178,13 @@ document.addEventListener('DOMContentLoaded', () => {
             resetState();
         }
     }
-
+    
     async function handleAiOptimization() {
-        const apiKey = localStorage.getItem('deepseek_api_key');
+        const provider = aiProviderSelect.value;
+        const apiKey = localStorage.getItem(`${provider}_api_key`);
+
         if (!apiKey) {
-            alert('请先在设置中输入您的DeepSeek API Key。');
+            alert(`请先在设置中输入您的 ${provider.charAt(0).toUpperCase() + provider.slice(1)} API Key。`);
             settingsModal.style.display = 'flex';
             return;
         }
@@ -154,11 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleLoading(true);
 
         const articleText = processedDoc.body.innerText.trim().substring(0, 4000);
-
-        // Build the image part of the prompt using original paths
-        // const imageSrcs = Array.from(imageFiles.keys());
-        // const imagePrompts = imageSrcs.map(src => `{"src": "${src}", "alt": "为这张图片生成的描述性alt文本"}`).join(',\n');
-
         const prompt = `
             请你扮演一位专业的SEO专家。基于以下HTML文章内容，请为我生成优化的SEO元数据。
             请严格按照以下JSON格式返回，不要包含任何额外的解释或代码块标记。
@@ -175,61 +213,109 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         try {
-            const response = await fetch('https://api.deepseek.com/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: "deepseek-chat",
-                    messages: [{ "role": "user", "content": prompt }],
-                    response_format: { type: "json_object" }
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`API 请求失败: ${response.status} ${response.statusText}. 详情: ${JSON.stringify(errorData)}`);
+            let seoData;
+            switch (provider) {
+                case 'deepseek':
+                case 'openai':
+                case 'moonshot':
+                    seoData = await callOpenAICompatibleAPI(provider, apiKey, prompt);
+                    break;
+                case 'gemini':
+                    seoData = await callGeminiAPI(apiKey, prompt);
+                    break;
+                default:
+                    throw new Error('不支持的AI提供商');
             }
-
-            const data = await response.json();
-            const seoData = JSON.parse(data.choices[0].message.content);
 
             // Populate fields with AI data
             metaDescriptionInput.value = (seoData.meta_description || '').slice(0, 160);
             keywordsInput.value = seoData.keywords || '';
             
-            // Image alt texts are no longer generated by AI, they default to filename instead.
-            // if (seoData.image_alts && Array.isArray(seoData.image_alts)) {
-            //     seoData.image_alts.forEach(imgData => {
-            //         const originalPath = imgData.src;
-            //         const altInput = document.querySelector(`input[data-original-path="${originalPath}"]`);
-            //         if (altInput) {
-            //             altInput.value = imgData.alt;
-            //         }
-            //         // Also update the alt attribute in the processed document directly
-            //         const blobUrl = imageFiles.get(originalPath);
-            //         if (blobUrl) {
-            //             const imgElement = processedDoc.querySelector(`img[src="${blobUrl}"]`);
-            //             if(imgElement) {
-            //                 imgElement.setAttribute('alt', imgData.alt);
-            //             }
-            //         }
-            //     });
-            // }
-
-            // Trigger updates to reflect changes in character counters and preview
+            // Trigger updates to reflect changes
             metaDescriptionInput.dispatchEvent(new Event('input'));
             keywordsInput.dispatchEvent(new Event('input'));
             updatePreview();
 
         } catch (error) {
-            console.error('AI优化失败:', error);
+            console.error(`${provider} AI优化失败:`, error);
             alert(`AI优化失败: ${error.message}`);
         } finally {
             toggleLoading(false);
         }
+    }
+
+    // --- API Call Functions ---
+
+    async function callOpenAICompatibleAPI(provider, apiKey, prompt) {
+        const apiDetails = {
+            openai: {
+                url: 'https://api.openai.com/v1/chat/completions',
+                model: 'gpt-3.5-turbo'
+            },
+            deepseek: {
+                url: 'https://api.deepseek.com/chat/completions',
+                model: 'deepseek-chat'
+            },
+            moonshot: {
+                url: 'https://api.moonshot.cn/v1/chat/completions',
+                model: 'moonshot-v1-8k'
+            }
+        };
+
+        const { url, model } = apiDetails[provider];
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: [{ "role": "user", "content": prompt }],
+                response_format: { type: "json_object" }
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`API 请求失败: ${response.status} ${response.statusText}. 详情: ${JSON.stringify(errorData)}`);
+        }
+
+        const data = await response.json();
+        return JSON.parse(data.choices[0].message.content);
+    }
+
+    async function callGeminiAPI(apiKey, prompt) {
+        // Gemini API has a different request structure
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+
+        const requestBody = {
+            contents: [{
+                parts: [{ text: prompt }]
+            }],
+            generationConfig: {
+                response_mime_type: "application/json",
+            }
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`API 请求失败: ${response.status} ${response.statusText}. 详情: ${JSON.stringify(errorData)}`);
+        }
+
+        const data = await response.json();
+        // The response structure for Gemini is also different
+        const content = data.candidates[0].content.parts[0].text;
+        return JSON.parse(content);
     }
 
 
@@ -264,12 +350,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let content = getMetaTagContent(property, 'property');
             if (!content) {
                 content = defaultOgData[property];
-            updateMetaTag(property, content, 'property');
-        }
+                updateMetaTag(property, content, 'property');
+            }
             inputElement.value = content;
             inputElement.disabled = false;
-    }
-    
+        }
+
         // Image Alt Text
         processImages();
     }
@@ -286,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Find corresponding img tag in the doc to get existing alt text
             const imgInDoc = processedDoc.querySelector(`img[src="${blobUrl}"]`);
             let altText = (imgInDoc ? imgInDoc.getAttribute('alt') : '') || generateAltText(originalPath);
-            
+
             const imageItem = document.createElement('div');
             imageItem.className = 'image-item';
             imageItem.innerHTML = `
@@ -348,11 +434,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Get the last part of the path
                     slugBase = pathname.substring(pathname.lastIndexOf('/') + 1);
                 }
-        } catch (e) {
+            } catch (e) {
                 // The input might not be a full, valid URL, so treat as a string
                 const urlString = canonicalUrl.replace(/\/$/g, ''); // remove trailing slash
                 slugBase = urlString.substring(urlString.lastIndexOf('/') + 1);
-        }
+            }
         }
         
         // Fallback to OG title if slug base is still empty
@@ -454,18 +540,18 @@ document.addEventListener('DOMContentLoaded', () => {
             previewFrame.srcdoc = serializedHtml;
         }
     }
-    
+
     function getMetaTagContent(name, attribute = 'name') {
         if (!processedDoc) return '';
         const meta = processedDoc.querySelector(`meta[${attribute}="${name}"]`);
         return meta ? meta.getAttribute('content') : '';
-            }
+    }
     
     function getLinkTagHref(rel) {
         if (!processedDoc) return '';
         const link = processedDoc.querySelector(`link[rel="${rel}"]`);
         return link ? link.getAttribute('href') : '';
-        }
+    }
 
     function generateAltText(src) {
         if (!src) return '';
@@ -488,10 +574,4 @@ document.addEventListener('DOMContentLoaded', () => {
             aiOptimizeBtn.querySelector('.ai-icon').style.display = 'inline-block';
         }
     }
-
-    // Hide AI-related elements as they are not used in this workflow
-    // const aiButton = document.getElementById('ai-optimize-btn');
-    // const settingsButton = document.getElementById('settings-btn');
-    // if(aiButton) aiButton.style.display = 'none';
-    // if(settingsButton) settingsButton.style.display = 'none';
 }); 

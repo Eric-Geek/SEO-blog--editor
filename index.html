@@ -23,7 +23,13 @@
                     <input type="file" id="file-input" accept=".zip">
                 </div>
 
-                <div class="control-group">
+                <div class="control-group ai-controls">
+                    <select id="ai-provider-select" title="选择AI模型">
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="openai">OpenAI (ChatGPT)</option>
+                        <option value="gemini">Google (Gemini)</option>
+                        <option value="moonshot">月之暗面 (Kimi)</option>
+                    </select>
                     <button id="ai-optimize-btn" class="ai-button" disabled>
                         <span class="ai-icon">✨</span> AI 一键优化
                         <div class="spinner" style="display: none;"></div>
@@ -76,13 +82,41 @@
 
     <div id="settings-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <h2>设置 API Key</h2>
-            <p>请输入您的 DeepSeek API Key。您的密钥将仅保存在您的浏览器中，不会上传到任何服务器。</p>
-            <label for="api-key-input">DeepSeek API Key:</label>
-            <input type="password" id="api-key-input" placeholder="sk-...">
+            <div class="modal-header">
+                <h2>设置 API Keys</h2>
+                <button id="cancel-api-key-btn" class="close-btn">&times;</button>
+            </div>
+            <p>选择服务商并输入您的API Key。密钥将仅保存在您的浏览器中。</p>
+            
+            <div class="modal-body">
+                <div class="modal-nav">
+                    <button class="nav-button active" data-provider="deepseek">DeepSeek</button>
+                    <button class="nav-button" data-provider="openai">OpenAI</button>
+                    <button class="nav-button" data-provider="gemini">Google</button>
+                    <button class="nav-button" data-provider="moonshot">月之暗面</button>
+                </div>
+                <div class="modal-main-content">
+                    <div class="api-key-group active" data-provider-content="deepseek">
+                        <label for="deepseek-api-key-input">DeepSeek API Key:</label>
+                        <input type="password" id="deepseek-api-key-input" placeholder="sk-...">
+                    </div>
+                    <div class="api-key-group" data-provider-content="openai">
+                        <label for="openai-api-key-input">OpenAI (ChatGPT) API Key:</label>
+                        <input type="password" id="openai-api-key-input" placeholder="sk-...">
+                    </div>
+                    <div class="api-key-group" data-provider-content="gemini">
+                        <label for="gemini-api-key-input">Google (Gemini) API Key:</label>
+                        <input type="password" id="gemini-api-key-input" placeholder="AIzaSy...">
+                    </div>
+                    <div class="api-key-group" data-provider-content="moonshot">
+                        <label for="moonshot-api-key-input">月之暗面 (Kimi) API Key:</label>
+                        <input type="password" id="moonshot-api-key-input" placeholder="sk-...">
+                    </div>
+                </div>
+            </div>
+
             <div class="modal-actions">
-                <button id="save-api-key-btn">保存</button>
-                <button id="cancel-api-key-btn">取消</button>
+                <button id="save-api-key-btn">保存全部</button>
             </div>
         </div>
     </div>

@@ -102,6 +102,23 @@ header h1 {
     100% { transform: rotate(360deg); }
 }
 
+.ai-controls {
+    display: flex;
+    gap: 10px;
+}
+
+#ai-provider-select {
+    padding: 0 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background-color: white;
+    font-size: 1em;
+}
+
+.ai-button {
+    flex-grow: 1;
+}
+
 /* Modal Styles */
 .modal-overlay {
     position: fixed;
@@ -125,6 +142,69 @@ header h1 {
     box-shadow: 0 5px 20px rgba(0,0,0,0.3);
 }
 
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 2em;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+}
+
+.modal-body {
+    display: flex;
+    margin-top: 20px;
+    gap: 20px;
+}
+
+.modal-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border-right: 1px solid var(--border-color);
+    padding-right: 20px;
+}
+
+.nav-button {
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 1em;
+    min-width: 100px;
+}
+
+.nav-button.active {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+.nav-button:not(.active):hover {
+    background-color: var(--light-gray);
+}
+
+.modal-main-content {
+    flex: 1;
+}
+
+.api-key-group {
+    display: none;
+}
+
+.api-key-group.active {
+    display: block;
+}
+
 .modal-content h2 {
     margin-top: 0;
     border: none;
@@ -141,6 +221,13 @@ header h1 {
     font-weight: 500;
     margin-bottom: 8px;
     display: block;
+}
+
+.modal-content input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
 }
 
 .modal-content input {
