@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 1. Add modified HTML
         const finalHtml = '<!DOCTYPE html>\n' + processedDoc.documentElement.outerHTML;
-        newZip.file(`${finalSlug}.html`, finalHtml);
+        newZip.file(`index.html`, finalHtml);
 
         // 2. Add images from original zip
         const imageAddPromises = [];
