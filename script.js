@@ -393,69 +393,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function processImages() {
         imageListDiv.innerHTML = '';
-        if (imageFiles.size === 0) {
+        
+        const imagesInDoc = Array.from(processedDoc.querySelectorAll('img'));
+        if (imagesInDoc.length === 0) {
             imageListDiv.innerHTML = '<p class="placeholder">未在此ZIP包中找到图片。</p>';
             return;
         }
 
-        let index = 0;
-        for (const [originalPath, blobUrl] of imageFiles.entries()) {
-            // Find corresponding img tag in the doc to get existing alt text
-            const imgInDoc = processedDoc.querySelector(`img[src="${blobUrl}"]`);
-            let altText = '';
-            let imgId = '';
-            
-            if (imgInDoc) {
-                altText = imgInDoc.getAttribute('alt') || generateAltText(originalPath);
-                imgId = imgInDoc.getAttribute('data-editor-id');
-                // Immediately set the generated alt text back to the document model.
-                imgInDoc.setAttribute('alt', altText);
-            }
+        const reversedImageFiles = new Map(Array.from(imageFiles.entries()).map(([k, v]) => [v, k]));
+
+        imagesInDoc.forEach((img, index) => {
+            const blobSrc = img.getAttribute('src');
+            const originalPath = reversedImageFiles.get(blobSrc) || '';
+
+            let altText = img.getAttribute('alt') || generateAltText(originalPath);
+            img.setAttribute('alt', altText); // Immediately write back to doc
 
             const imageItem = document.createElement('div');
             imageItem.className = 'image-item';
             imageItem.innerHTML = `
-                <img src="${blobUrl}" alt="preview">
+                <img src="${blobSrc}" alt="preview">
                 <div class="image-details">
                     <label for="alt-text-${index}"><code>${originalPath.split('/').pop()}</code></label>
-                    <input type="text" id="alt-text-${index}" value="${altText}" data-img-id="${imgId}">
+                    <input type="text" id="alt-text-${index}" value="${altText}">
                 </div>
             `;
             imageListDiv.appendChild(imageItem);
             
             const altInput = imageItem.querySelector(`#alt-text-${index}`);
             altInput.addEventListener('input', () => {
-                if (imgInDoc) {
-                    imgInDoc.setAttribute('alt', altInput.value);
-                }
+                // Keep the doc in sync with any manual edits
+                img.setAttribute('alt', altInput.value);
             });
-        }
+        });
     }
     
     async function handleDownload() {
         if (!processedDoc || !originalZip) return;
 
-        // --- Definitive Alt Text Sync using Unique IDs ---
-        // This is the single source of truth for alt texts before download.
-        document.querySelectorAll('#image-list input[data-img-id]').forEach(input => {
-            const imgId = input.dataset.imgId;
-            if (imgId) {
-                const imgInDoc = processedDoc.querySelector(`img[data-editor-id="${imgId}"]`);
-                if (imgInDoc) {
-                    imgInDoc.setAttribute('alt', input.value);
-                }
-            }
-        });
+        // --- Definitive Alt Text Sync using DOM order ---
+        const imagesInDoc = Array.from(processedDoc.querySelectorAll('img'));
+        const altInputs = Array.from(document.querySelectorAll('#image-list input'));
 
-        // Revert blob URLs back to original relative paths before zipping
+        if (imagesInDoc.length === altInputs.length) {
+            imagesInDoc.forEach((img, index) => {
+                img.setAttribute('alt', altInputs[index].value);
+            });
+        }
+        
+        // Revert blob URLs back to original relative paths
         processedDoc.querySelectorAll('img').forEach(img => {
-            // Remove our internal tracking ID before exporting
-            img.removeAttribute('data-editor-id');
-
             const blobSrc = img.getAttribute('src');
             for (const [originalPath, blobUrl] of imageFiles.entries()) {
                 if (blobUrl === blobSrc) {
-                    // Correctly handle paths that might already be partially encoded
                     const decodedPath = decodeURIComponent(originalPath);
                     img.setAttribute('src', encodeURIComponent(decodedPath).replace(/%2F/g, '/'));
                     break;
