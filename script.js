@@ -470,7 +470,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 提取原始文件名（去除原始文件夹路径）
                 const fileName = originalSrc.split('/').pop();
                 // 设置新的图片路径
-                img.setAttribute('src', `${imageFolderName}/${fileName}`);
+                const newPath = `${imageFolderName}/${fileName}`;
+                img.setAttribute('src', newPath);
+                
+                // 检查图片是否被a标签包裹，如果是，也更新a标签的href
+                const parentLink = img.closest('a');
+                if (parentLink) {
+                    const originalHref = parentLink.getAttribute('href');
+                    if (originalHref) {
+                        const hrefFileName = originalHref.split('/').pop();
+                        // 只有当href指向图片文件时才更新
+                        if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(hrefFileName)) {
+                            parentLink.setAttribute('href', `${imageFolderName}/${hrefFileName}`);
+                        }
+                    }
+                }
             }
         });
         
