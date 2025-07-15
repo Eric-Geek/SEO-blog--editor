@@ -432,23 +432,30 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleDownload() {
         if (!processedDoc || !originalZip) return;
 
-        // Final update for alt texts from inputs to the doc
-        document.querySelectorAll('#image-list input[data-original-path]').forEach(input => {
-            const blobUrl = input.closest('.image-item').querySelector('img').src;
-            const imgInDoc = processedDoc.querySelector(`img[src="${blobUrl}"]`);
-            if (imgInDoc) {
-                imgInDoc.setAttribute('alt', input.value);
-            }
-        });
-
         // Revert blob URLs back to original relative paths before zipping
         processedDoc.querySelectorAll('img').forEach(img => {
             const blobSrc = img.getAttribute('src');
             for (const [originalPath, blobUrl] of imageFiles.entries()) {
                 if (blobUrl === blobSrc) {
-                    img.setAttribute('src', encodeURIComponent(originalPath).replace(/%2F/g, '/'));
+                    // Correctly handle paths that might already be partially encoded
+                    const decodedPath = decodeURIComponent(originalPath);
+                    img.setAttribute('src', encodeURIComponent(decodedPath).replace(/%2F/g, '/'));
                     break;
                 }
+            }
+        });
+
+        // Final, definitive update for alt texts from UI to the doc, AFTER src paths are restored.
+        // This is the single source of truth for alt texts before download.
+        document.querySelectorAll('#image-list input[data-original-path]').forEach(input => {
+            const originalPath = input.dataset.originalPath;
+            // Find the image in the doc using the now-restored, correctly-encoded original path
+            const decodedPath = decodeURIComponent(originalPath);
+            const finalSrc = encodeURIComponent(decodedPath).replace(/%2F/g, '/');
+            const imgInDoc = processedDoc.querySelector(`img[src="${finalSrc}"]`);
+            
+            if (imgInDoc) {
+                imgInDoc.setAttribute('alt', input.value);
             }
         });
         
