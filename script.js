@@ -185,21 +185,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Remove specific CSS rules as requested
             removeUnwantedCss(processedDoc);
 
-            // Assign a unique ID to each image for robust tracking
-            processedDoc.querySelectorAll('img').forEach((img, index) => {
-                img.setAttribute('data-editor-id', `img-${index}`);
-            });
-
-            // Replace relative image paths with blob URLs for preview
-            processedDoc.querySelectorAll('img').forEach(img => {
-                const originalSrc = decodeURIComponent(img.getAttribute('src'));
-                if (imageFiles.has(originalSrc)) {
-                    img.setAttribute('src', imageFiles.get(originalSrc));
-                }
-            });
-
             populateEditorFields();
             updatePreview();
+
             downloadBtn.disabled = false;
             aiOptimizeBtn.disabled = false; // Enable AI button
 
@@ -353,6 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateEditorFields() {
         if (!processedDoc) return;
 
+        // Process images first to set alt texts on the document
+        processImages();
+
         // Meta Description
         metaDescriptionInput.value = getMetaTagContent('description');
         updateCharacterCounter(metaDescriptionInput, descriptionCounter, 160);
@@ -386,9 +377,6 @@ document.addEventListener('DOMContentLoaded', () => {
             inputElement.value = content;
             inputElement.disabled = false;
         }
-
-        // Image Alt Text
-        processImages();
     }
 
     function processImages() {
@@ -400,21 +388,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const reversedImageFiles = new Map(Array.from(imageFiles.entries()).map(([k, v]) => [v, k]));
-
         imagesInDoc.forEach((img, index) => {
-            const blobSrc = img.getAttribute('src');
-            const originalPath = reversedImageFiles.get(blobSrc) || '';
+            const originalSrc = decodeURIComponent(img.getAttribute('src'));
+            const blobUrl = imageFiles.get(originalSrc) || '';
 
-            let altText = img.getAttribute('alt') || generateAltText(originalPath);
-            img.setAttribute('alt', altText); // Immediately write back to doc
+            // Generate and immediately set alt text on the master document
+            let altText = img.getAttribute('alt') || generateAltText(originalSrc);
+            img.setAttribute('alt', altText);
 
             const imageItem = document.createElement('div');
             imageItem.className = 'image-item';
             imageItem.innerHTML = `
-                <img src="${blobSrc}" alt="preview">
+                <img src="${blobUrl}" alt="preview">
                 <div class="image-details">
-                    <label for="alt-text-${index}"><code>${originalPath.split('/').pop()}</code></label>
+                    <label for="alt-text-${index}"><code>${originalSrc.split('/').pop()}</code></label>
                     <input type="text" id="alt-text-${index}" value="${altText}">
                 </div>
             `;
@@ -422,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const altInput = imageItem.querySelector(`#alt-text-${index}`);
             altInput.addEventListener('input', () => {
-                // Keep the doc in sync with any manual edits
+                // Sync manual edits back to the master document
                 img.setAttribute('alt', altInput.value);
             });
         });
@@ -432,6 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!processedDoc || !originalZip) return;
 
         // --- Definitive Alt Text Sync using DOM order ---
+        // This is the final sync from UI to the master document before download.
         const imagesInDoc = Array.from(processedDoc.querySelectorAll('img'));
         const altInputs = Array.from(document.querySelectorAll('#image-list input'));
 
@@ -440,18 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 img.setAttribute('alt', altInputs[index].value);
             });
         }
-        
-        // Revert blob URLs back to original relative paths
-        processedDoc.querySelectorAll('img').forEach(img => {
-            const blobSrc = img.getAttribute('src');
-            for (const [originalPath, blobUrl] of imageFiles.entries()) {
-                if (blobUrl === blobSrc) {
-                    const decodedPath = decodeURIComponent(originalPath);
-                    img.setAttribute('src', encodeURIComponent(decodedPath).replace(/%2F/g, '/'));
-                    break;
-                }
-            }
-        });
         
         // --- Create New Zip ---
         const newZip = new JSZip();
@@ -571,7 +547,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updatePreview() {
         if (processedDoc) {
-            const serializedHtml = new XMLSerializer().serializeToString(processedDoc);
+            // Create a clone of the master document for preview purposes
+            const previewDoc = processedDoc.cloneNode(true);
+            
+            // Replace src with blob URLs only on the preview clone
+            previewDoc.querySelectorAll('img').forEach(img => {
+                const originalSrc = decodeURIComponent(img.getAttribute('src'));
+                const blobUrl = imageFiles.get(originalSrc);
+                if (blobUrl) {
+                    img.setAttribute('src', blobUrl);
+                }
+            });
+
+            const serializedHtml = new XMLSerializer().serializeToString(previewDoc);
             previewFrame.srcdoc = serializedHtml;
         }
     }
