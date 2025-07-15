@@ -134,33 +134,6 @@ const App: React.FC = () => {
         setPreviewDoc(newPreviewDoc);
     };
 
-    const handleImageAltChange = (originalPath: string, newAlt: string) => {
-        if (!processedDoc) return;
-
-        const newDoc = processedDoc.cloneNode(true) as Document;
-        const fileName = originalPath.split('/').pop();
-        
-        // Robustly find the image element by checking if the src ENDS WITH the original filename.
-        const imgElement = Array.from(newDoc.querySelectorAll('img')).find(img => 
-            img.getAttribute('src')?.endsWith(fileName || '')
-        );
-
-        if (imgElement) {
-            imgElement.setAttribute('alt', newAlt);
-        } else {
-            console.warn(`Could not find image with original path ending in: ${fileName}`);
-        }
-        
-        setProcessedDoc(newDoc);
-        
-        const newPreviewDoc = prepareForPreview(newDoc, imageFiles);
-        setPreviewDoc(newPreviewDoc);
-
-        setImageFiles(prev => prev.map(img => 
-          img.originalPath === originalPath ? { ...img, alt: newAlt } : img
-        ));
-    };
-
     const handleDownload = async () => {
         if (!processedDoc || !originalZip) {
             message.error('没有可下载的文件。请先上传一个ZIP包。');
