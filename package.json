@@ -3,27 +3,23 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://eric-geek.github.io/SEO-blog--editor/",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "antd": "^5.12.8",
-    "jszip": "^3.10.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "antd": "^5.12.8",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
-    "@types/jszip": "^3.4.1",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
+    "@types/jszip": "^3.4.1",
     "@vitejs/plugin-react": "^4.2.1",
-    "gh-pages": "^6.3.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }
-}
+} 

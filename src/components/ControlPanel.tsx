@@ -46,7 +46,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   onFileSelect,
   onValuesChange,
   onDownload,
-  onAiOptimize,
+  onAiOptimize
 }) => {
   const [aiProvider, setAiProvider] = useState('deepseek');
   const [isAiLoading, setIsAiLoading] = useState(false);

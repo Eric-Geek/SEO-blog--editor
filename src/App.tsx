@@ -266,7 +266,7 @@ const App: React.FC = () => {
                         onAiOptimize={handleAiOptimization}
                     />
                 </Sider>
-                <Content style={{ padding: '48px', height: 'calc(100vh - 64px)' }}>
+                <Content style={{ padding: '24px', backgroundColor: '#f0f2f5', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <div style={{ marginBottom: 16 }}>
                         <Radio.Group value={previewDevice} onChange={(e) => setPreviewDevice(e.target.value)}>
                             <Radio.Button value="desktop">桌面</Radio.Button>
