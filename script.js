@@ -419,9 +419,12 @@ document.addEventListener('DOMContentLoaded', () => {
             altInput.addEventListener('input', () => {
                 if (imgInDoc) {
                     imgInDoc.setAttribute('alt', altInput.value);
-                    // No need to call updatePreview() here as alt text changes don't show in preview
                 }
             });
+
+            // Trigger the input event programmatically to ensure the default value is saved
+            altInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
             index++;
         }
     }
