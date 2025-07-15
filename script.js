@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageListDiv = document.getElementById('image-list');
     const downloadBtn = document.getElementById('download-btn');
     const previewFrame = document.getElementById('preview-frame');
+    const ogPresetSelect = document.getElementById('og-preset-select');
     
     // AI and Settings elements
     const settingsBtn = document.getElementById('settings-btn');
@@ -39,6 +40,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let htmlFileInfo = { name: '', content: '' };
     let imageFiles = new Map(); // Map<originalPath, blobUrl>
     let imageFolder = '';
+
+    const ogPresets = {
+        preset1: {
+            'og:title': 'GlobalGPT Free AI Tools : All-in-One Access to ChatGPT',
+            'og:description': "Explore GlobalGPT's free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.",
+            'og:image': 'https://www.glbgpt.com/home'
+        },
+        preset2: {
+            'og:title': 'Penligent AI: CursorOS built for Security Engineers',
+            'og:description': 'PenligentAI is building the CursorOS for security professionals — an intelligent AI-powered penetration testing tool that streamlines the entire process from reconnaissance and vulnerability scanning to exploitation and report generation. By leveraging the power of large language models (LLMs), PenligentAI runs end-to-end tests autonomously, with every step clearly traceable and transparent. It’s the secret weapon for professionals and a must-have tool for organizations conducting security assessments.',
+            'og:image': 'https://penligent.ai/'
+        }
+    };
 
     // --- Event Listeners ---
     fileInput.addEventListener('change', handleFileSelect);
@@ -113,6 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
     ogImageInput.addEventListener('input', () => {
         updateMetaTag('og:image', ogImageInput.value, 'property');
         updatePreview();
+    });
+
+    ogPresetSelect.addEventListener('change', (event) => {
+        const selectedPreset = event.target.value;
+        updateOgFields(selectedPreset);
     });
 
     // --- Main Functions ---
@@ -360,28 +379,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // Canonical URL
         canonicalUrlInput.value = getLinkTagHref('canonical') || '';
 
-        // Social Media Meta Tags (Open Graph)
-        const defaultOgData = {
-            'og:title': 'GlobalGPT Free AI Tools : All-in-One Access to ChatGPT',
-            'og:description': "Explore GlobalGPT's free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.",
-            'og:image': 'https://www.glbgpt.com/home'
-        };
+        // Social Media Meta Tags (Open Graph) - Set initial state from preset1
+        updateOgFields('preset1');
+        ogPresetSelect.value = 'preset1';
+    }
+
+    function updateOgFields(presetKey) {
+        const preset = ogPresets[presetKey];
+        if (!preset) return;
 
         const ogInputs = {
             'og:title': ogTitleInput,
             'og:description': ogDescriptionInput,
             'og:image': ogImageInput
         };
-        
+
         for (const [property, inputElement] of Object.entries(ogInputs)) {
             let content = getMetaTagContent(property, 'property');
-            if (!content) {
-                content = defaultOgData[property];
+            // If the document doesn't have the tag, or if we are switching presets, use the preset value.
+            if (!content || presetKey) {
+                content = preset[property];
                 updateMetaTag(property, content, 'property');
             }
             inputElement.value = content;
             inputElement.disabled = false;
         }
+        updatePreview();
     }
 
     function processImages() {
