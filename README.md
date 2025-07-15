@@ -1,43 +1,47 @@
-# Notion 文章 SEO 优化工具
+# Notion 文章 SEO 与阅读体验优化工具
 
-一个帮助您快速优化从 Notion 导出的 HTML 文章并进行 SEO 强化的在线工具。
+一款强大且易用的在线编辑器，专为优化从 Notion 导出的 HTML 文章而设计。它不仅能一键完成繁琐的 SEO 设置，还能自动增强文章的阅读体验，使其更适合发布到博客或个人网站。
 
-**在线访问**: [https://eric-geek.github.io/SEO-blog--editor/](https://eric-geek.github.io/SEO-blog--editor/)
+**在线体验**: [https://eric-geek.github.io/SEO-blog--editor/](https://eric-geek.github.io/SEO-blog--editor/)
 
 ---
 
-我们一起将繁琐的手动 SEO 优化流程自动化，构建了一个强大、易用的 Web 工具。这个项目完美解决了 Notion 用户在文章发布前面临的 SEO 痛点。
+![应用截图](https://raw.githubusercontent.com/Eric-Geek/SEO-blog--editor/main/img/Snipaste_2024-05-27_01-44-30.png)
 
 ## ✨ 核心功能
 
-- **📦 ZIP 包处理**: 直接上传并解析从 Notion 导出的 `.zip` 压缩包，无需手动解压。
-- **🤖 AI 一键优化**: 集成 DeepSeek API，一键自动为您的文章生成优化的 `Meta Description` 和 `Keywords`。
-- **🖼️ 智能图片处理**:
-  - 自动为所有图片生成以文件名作为默认值的 `Alt` 文本。
-  - 在编辑器中实时预览所有图片，并支持手动修改 `Alt` 文本。
-- **📝 全面的 SEO 标签编辑**:
+### SEO 强化
+- **📦 ZIP 无缝处理**: 直接上传 Notion 导出的 `.zip` 包，工具会自动解析 HTML 和图片资源。
+- **🤖 AI 一键优化**: 集成多种大语言模型 API，一键为文章生成高质量的 `Meta Description` 和 `Keywords`。
+  - 支持 **DeepSeek**, **OpenAI (ChatGPT)**, **Google (Gemini)**, **月之暗面 (Kimi)**。
+- **📝 全方位元标签编辑**:
   - 提供对 `Meta Description`, `Keywords`, `Canonical URL` 的完整编辑功能。
-  - 为社交媒体分享（Open Graph）自动填充可编辑的默认 `og:title`, `og:description` 和 `og:image` 标签。
+  - 内置两套可切换的**社交媒体分享 (Open Graph) 预设值**，方便快速填充 `og:title`, `og:description` 等标签。
+- **🖼️ 图片 Alt 文本优化**: 自动提取所有图片，生成默认 `Alt` 文本，并支持在编辑器中实时修改。
 - **🔗 智能命名与打包**:
-  - 根据您设置的 `Canonical URL` 自动生成符合 URL 规范的文件名。
-  - 将优化后的 HTML 文件和所有图片资源重新打包成一个新的 `.zip` 文件供您下载。
-- **✒️ 作者署名**: 在页面底部添加了您的署名和 GitHub 链接。
+  - 根据 `Canonical URL` 自动生成符合 SEO 规范的 `.zip` 文件名和图片文件夹名。
+  - 将优化后的 HTML 和所有图片资源重新打包成一个结构清晰的 `.zip` 文件。
 
-## 🚀 如何使用
+### 阅读体验增强
+- **📑 自动生成目录 (TOC)**: 分析文章中的 H2 标题，自动在文章侧边生成一个美观、可交互的悬浮目录。
+- **🚀 平滑滚动与高亮**: 点击目录项可平滑滚动至对应章节，并实时高亮当前所在章节。
+- **📊 阅读进度条**: 在页面顶部提供一个阅读进度条，直观地显示文章的阅读进度。
+- **💅 CSS 样式净化**: 自动移除 Notion 导出时多余的页面居中和宽度限制样式。
+
+## 🚀 快速上手
 
 1.  **上传文件**: 点击“上传 Notion 导出的 ZIP 包”按钮选择文件。
-2.  **设置API Key (可选)**: 如果您想使用 AI 功能，请点击右上角的 ⚙️ 图标，输入您的 DeepSeek, Google, OpenAI, MoonShot API Key。
-3.  **进行优化**:
-    - 点击“✨ AI 一键优化”按钮，让 AI 为您生成描述和关键词。
-    - 手动检查并调整所有 SEO 相关的输入框。
-    - 检查并优化图片 `Alt` 文本。
-4.  **下载**: 点击“生成并下载优化后的ZIP包”按钮，即可获得处理好的文件。
+2.  **设置 API Key (可选)**: 如果希望使用 AI 功能，点击右上角的 **⚙️** 图标，在弹出的模态框中选择服务商并输入您的 API Key。密钥仅保存在浏览器本地。
+3.  **内容优化**:
+    - **AI 优化**: 选择一个 AI 模型，点击“✨ AI 一键优化”。
+    - **手动调整**: 检查并调整 Meta 标签、Canonical URL 等。
+    - **OG 预设**: 在“社交媒体 Meta 标签”部分，通过下拉菜单选择最适合的预设。
+    - **图片 Alt**: 为图片列表中的每一项填写或修改 `Alt` 文本。
+4.  **预览与下载**: 在右侧实时预览所有改动。确认无误后，点击“生成并下载优化后的ZIP包”按钮，即可获得最终文件。
 
-## 🛠️ 本地开发
+## 🛠️ 本地运行
 
-如果您希望在本地运行或进行二次开发，请按以下步骤操作：
-
-1.  克隆仓库:
+1.  克隆本仓库到本地:
     ```bash
     git clone https://github.com/Eric-Geek/SEO-blog--editor.git
     ```
@@ -45,7 +49,7 @@
     ```bash
     cd SEO-blog--editor
     ```
-3.  在浏览器中打开 `index.html` 文件即可开始使用。
+3.  直接在浏览器中打开 `index.html` 文件即可开始使用。
 
 ## 📄 开源协议
 
