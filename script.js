@@ -399,6 +399,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const imgInDoc = processedDoc.querySelector(`img[src="${blobUrl}"]`);
             let altText = (imgInDoc ? imgInDoc.getAttribute('alt') : '') || generateAltText(originalPath);
 
+            // Bug Fix: Immediately set the generated alt text back to the document model.
+            if (imgInDoc) {
+                imgInDoc.setAttribute('alt', altText);
+            }
+
             const imageItem = document.createElement('div');
             imageItem.className = 'image-item';
             imageItem.innerHTML = `
