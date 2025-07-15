@@ -17,13 +17,12 @@ export interface SeoData {
 }
 
 interface ControlPanelProps {
+  form: FormInstance;
   initialData?: SeoData;
   imageFiles: ImageFile[];
   onFileSelect: (file: File) => void;
   onValuesChange: (changedValues: any, allValues: any) => void;
-  onImageAltChange: (originalPath: string, newAlt: string) => void;
   onDownload: () => void;
-  form: FormInstance; // Receive form instance from parent
   onAiOptimize: (provider: string) => void;
 }
 
@@ -41,13 +40,12 @@ const ogPresets = {
 };
 
 const ControlPanel: React.FC<ControlPanelProps> = ({ 
+  form,
   initialData, 
   imageFiles,
   onFileSelect,
   onValuesChange,
-  onImageAltChange,
   onDownload,
-  form,
   onAiOptimize,
 }) => {
   const [aiProvider, setAiProvider] = useState('deepseek');
