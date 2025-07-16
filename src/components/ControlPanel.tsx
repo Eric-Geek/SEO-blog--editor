@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Input, Upload, message, Select } from 'antd';
+import { Button, Form, Input, Upload, message, Select, Card } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd/es/upload/interface';
 import type { FormInstance } from 'antd/es/form';
-import type { ImageFile } from '../App'; // Import from App
+import type { ImageFile } from '../App';
 
 const { TextArea } = Input;
 
@@ -14,6 +14,9 @@ export interface SeoData {
   ogTitle: string;
   ogDescription: string;
   ogImage: string;
+  ogType: string; // Add this line
+  coreKeyword: string;
+  presetScheme: string;
 }
 
 interface ControlPanelProps {
@@ -22,22 +25,10 @@ interface ControlPanelProps {
   onFileSelect: (file: File) => void;
   onValuesChange: (changedValues: any, allValues: any) => void;
   onDownload: () => void;
-  form: FormInstance; // Receive form instance from parent
-  onAiOptimize: (provider: string) => void;
+  form: FormInstance;
+  onAiOptimize: (provider: string, coreKeyword: string) => void;
+  onPresetChange: (presetKey: string) => void;
 }
-
-const ogPresets = {
-    preset1: {
-        ogTitle: 'GlobalGPT Free AI Tools : All-in-One Access to ChatGPT',
-        ogDescription: "Explore GlobalGPT's free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.",
-        ogImage: 'https://www.glbgpt.com/home'
-    },
-    preset2: {
-        ogTitle: 'Penligent AI: CursorOS built for Security Engineers',
-        ogDescription: 'PenligentAI is building the CursorOS for security professionals — an intelligent AI-powered penetration testing tool that streamlines the entire process from reconnaissance and vulnerability scanning to exploitation and report generation. By leveraging the power of large language models (LLMs), PenligentAI runs end-to-end tests autonomously, with every step clearly traceable and transparent. It’s the secret weapon for professionals and a must-have tool for organizations conducting security assessments.',
-        ogImage: 'https://penligent.ai/'
-    }
-};
 
 const ControlPanel: React.FC<ControlPanelProps> = ({ 
   initialData, 
@@ -47,41 +38,50 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   onDownload,
   form,
   onAiOptimize,
+  onPresetChange,
 }) => {
   const [aiProvider, setAiProvider] = useState('deepseek');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [ogImageSource, setOgImageSource] = useState('preset');
 
   useEffect(() => {
     if (initialData) {
-      // If OG fields are empty, populate with preset1 by default
-      const ogDataToSet = {
-        ...initialData,
-        ogTitle: initialData.ogTitle || ogPresets.preset1.ogTitle,
-        ogDescription: initialData.ogDescription || ogPresets.preset1.ogDescription,
-        ogImage: initialData.ogImage || ogPresets.preset1.ogImage,
-      };
-      form.setFieldsValue(ogDataToSet);
+      form.setFieldsValue(initialData);
     }
   }, [initialData, form]);
 
-  const handlePresetChange = (value: string) => {
-    const preset = value === 'preset1' ? ogPresets.preset1 : ogPresets.preset2;
-    form.setFieldsValue({
-      ogTitle: preset.ogTitle,
-      ogDescription: preset.ogDescription,
-      ogImage: preset.ogImage,
-    });
-    // Manually trigger onValuesChange to update the parent state
-    onValuesChange({
-      ogTitle: preset.ogTitle,
-      ogDescription: preset.ogDescription,
-      ogImage: preset.ogImage,
-    }, form.getFieldsValue());
+  useEffect(() => {
+    // Check initial value of ogImage to set the initial state of ogImageSource
+    const ogImageValue = form.getFieldValue('ogImage');
+    if (ogImageValue && !['glbgpt.webp', 'penligent.webp'].includes(ogImageValue)) {
+      setOgImageSource('custom');
+    } else {
+      setOgImageSource('preset');
+    }
+  }, [form]);
+
+  const handleOgImageSourceChange = (value: string) => {
+    setOgImageSource(value);
+    if (value === 'preset') {
+      // When switching back to presets, we might want to set a default
+      // Here, we check the current presetScheme and set the corresponding image.
+      const currentPreset = form.getFieldValue('presetScheme');
+      form.setFieldsValue({ ogImage: currentPreset === 'preset1' ? 'glbgpt.webp' : 'penligent.webp' });
+    } else {
+      // When switching to custom, clear the field
+      form.setFieldsValue({ ogImage: '' });
+    }
   };
+
+  const handleOgImagePresetChange = (value: string) => {
+    form.setFieldsValue({ ogImage: value });
+  };
+
 
   const handleAiClick = async () => {
     setIsAiLoading(true);
-    await onAiOptimize(aiProvider);
+    const coreKeyword = form.getFieldValue('coreKeyword') || '';
+    await onAiOptimize(aiProvider, coreKeyword);
     setIsAiLoading(false);
   };
 
@@ -108,56 +108,91 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         </Upload>
       </Form.Item>
 
-      <Form.Item>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Select value={aiProvider} onChange={setAiProvider} style={{ width: 120 }}>
-            <Select.Option value="deepseek">DeepSeek</Select.Option>
-            <Select.Option value="openai">OpenAI</Select.Option>
-            <Select.Option value="gemini">Google</Select.Option>
-            <Select.Option value="moonshot">月之暗面</Select.Option>
-          </Select>
-          <Button type="primary" block onClick={handleAiClick} loading={isAiLoading}>
-            ✨ AI 一键优化
-          </Button>
-        </div>
-      </Form.Item>
+      <Card size="small" style={{ marginBottom: 16 }}>
+        <Form.Item
+          name="coreKeyword"
+          label="核心关键词 (Core Keyword)"
+          tooltip="输入本文最想优化的核心词，AI 将围绕它进行优化。"
+        >
+          <Input placeholder="例如: AI website builders" />
+        </Form.Item>
+        <Form.Item>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Select value={aiProvider} onChange={setAiProvider} style={{ width: 120 }}>
+              <Select.Option value="deepseek">DeepSeek</Select.Option>
+              <Select.Option value="openai">OpenAI</Select.Option>
+              <Select.Option value="gemini">Google</Select.Option>
+              <Select.Option value="moonshot">月之暗面</Select.Option>
+            </Select>
+            <Button type="primary" block onClick={handleAiClick} loading={isAiLoading}>
+              ✨ AI 一键优化
+            </Button>
+          </div>
+        </Form.Item>
+      </Card>
 
       <Form.Item
         name="metaDescription"
-        label="2. Meta Description (140-160字符)"
+        label="2. Meta Description"
       >
         <TextArea rows={4} maxLength={160} showCount />
       </Form.Item>
 
       <Form.Item
         name="keywords"
-        label="3. Keywords (最多100字符)"
+        label="3. Keywords"
       >
         <Input maxLength={100} showCount />
       </Form.Item>
 
       <Form.Item
+        name="presetScheme"
+        label="统一预设方案"
+        tooltip="切换此选项会自动更新下方的 Canonical URL 和 Open Graph 预设值"
+      >
+        <Select onChange={onPresetChange}>
+          <Select.Option value="preset1">预设 01 (glbgpt.com)</Select.Option>
+          <Select.Option value="preset2">预设 02 (penligent.ai)</Select.Option>
+        </Select>
+      </Form.Item>
+      
+      <Form.Item
         name="canonicalUrl"
         label="4. Canonical URL"
       >
-        <Input placeholder="例如: https://example.com/original-article" />
+        <Input />
       </Form.Item>
 
-      <Form.Item label="5. 社交媒体 Meta 标签 (Open Graph)">
-        <Select defaultValue="preset1" onChange={handlePresetChange} style={{ marginBottom: 16 }}>
-          <Select.Option value="preset1">预设 01</Select.Option>
-          <Select.Option value="preset2">预设 02</Select.Option>
-        </Select>
+      <Card title="5. 社交媒体 Meta 标签 (Open Graph)" size="small">
         <Form.Item name="ogTitle" label="OG Title">
           <Input />
         </Form.Item>
         <Form.Item name="ogDescription" label="OG Description">
           <TextArea rows={4} />
         </Form.Item>
-        <Form.Item name="ogImage" label="OG Image URL">
+        <Form.Item label="OG Image"
+        tooltip="可选择预设图片或自定义图片链接。预设图片将包含在最终下载的 ZIP 包中。">
+          <Select value={ogImageSource} onChange={handleOgImageSourceChange} style={{ width: 120, marginRight: 8 }}>
+            <Select.Option value="preset">预设图片</Select.Option>
+            <Select.Option value="custom">自定义链接</Select.Option>
+          </Select>
+          {ogImageSource === 'preset' ? (
+            <Form.Item name="ogImage" noStyle>
+              <Select style={{ width: 'calc(100% - 128px)' }} onChange={handleOgImagePresetChange}>
+                <Select.Option value="glbgpt.webp">预设 01 (glbgpt.webp)</Select.Option>
+                <Select.Option value="penligent.webp">预设 02 (penligent.webp)</Select.Option>
+              </Select>
+            </Form.Item>
+          ) : (
+            <Form.Item name="ogImage" noStyle>
+              <Input style={{ width: 'calc(100% - 128px)' }} placeholder="输入图片链接" />
+            </Form.Item>
+          )}
+        </Form.Item>
+        <Form.Item name="ogType" label="OG Type" tooltip="建议使用 article 或 website">
           <Input />
         </Form.Item>
-      </Form.Item>
+      </Card>
 
       <Form.Item label="6. 图片 Alt 文本">
         {imageFiles.length > 0 ? (
@@ -165,7 +200,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             <div key={image.originalPath} style={{ marginBottom: 16, display: 'flex', alignItems: 'center' }}>
               <img src={image.blobUrl} alt="preview" style={{ width: 40, height: 40, objectFit: 'cover', marginRight: 12, borderRadius: 4 }} />
               <Form.Item
-                name={image.originalPath} // Use originalPath as a unique field name
+                name={image.originalPath}
                 noStyle
                 initialValue={image.alt}
               >
@@ -189,4 +224,4 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   );
 };
 
-export default ControlPanel; 
+export default ControlPanel;

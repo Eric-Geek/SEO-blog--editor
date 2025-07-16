@@ -21,6 +21,31 @@ export interface ImageFile {
   alt: string;
 }
 
+interface Preset {
+  canonicalPrefix: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  ogType: string;
+}
+
+const presets: Record<string, Preset> = {
+  preset1: {
+    canonicalPrefix: 'https://www.glbgpt.com/resource/',
+    ogTitle: 'GlobalGPT Free AI Tools : All-in-One Access to ChatGPT',
+    ogDescription: "Explore GlobalGPT's free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.",
+    ogImage: 'glbgpt.webp',
+    ogType: 'website'
+  },
+  preset2: {
+    canonicalPrefix: 'https://penligent.ai/blog/',
+    ogTitle: 'Penligent AI: CursorOS built for Security Engineers',
+    ogDescription: 'PenligentAI is building the CursorOS for security professionals — an intelligent AI-powered penetration testing tool that streamlines the entire process from reconnaissance and vulnerability scanning to exploitation and report generation. By leveraging the power of large language models (LLMs), PenligentAI runs end-to-end tests autonomously, with every step clearly traceable and transparent. It’s the secret weapon for professionals and a must-have tool for organizations conducting security assessments.',
+    ogImage: 'penligent.webp',
+    ogType: 'website'
+  }
+};
+
 const { Header, Content, Sider } = Layout;
 const { Title, Paragraph } = Typography;
 
@@ -87,12 +112,7 @@ const App: React.FC = () => {
             
             // NOW, the doc is fully enhanced.
             // This enhanced doc is the master version for everything.
-            setProcessedDoc(doc);
             
-            // Prepare a separate version for preview with blob URLs
-            const docForPreview = prepareForPreview(doc, images);
-            setPreviewDoc(docForPreview);
-
             images.forEach(imgData => {
                 const imgElement = doc.querySelector(`img[src="${imgData.originalPath}"]`);
                 const fileName = imgData.originalPath.split('/').pop() || '';
@@ -101,14 +121,42 @@ const App: React.FC = () => {
             });
             setImageFiles(images);
             
+            const h1 = doc.querySelector('h1')?.textContent?.trim() || 'untitled';
+            const slug = generateSlug(h1);
+
             const initialSeoData: SeoData = {
                 metaDescription: getMetaTagContent(doc, 'description'),
                 keywords: getMetaTagContent(doc, 'keywords'),
-                canonicalUrl: getLinkTagHref(doc, 'canonical') || '',
-                ogTitle: getMetaTagContent(doc, 'og:title', 'property'),
-                ogDescription: getMetaTagContent(doc, 'og:description', 'property'),
-                ogImage: getMetaTagContent(doc, 'og:image', 'property'),
+                canonicalUrl: presets.preset1.canonicalPrefix + slug,
+                ogTitle: presets.preset1.ogTitle,
+                ogDescription: presets.preset1.ogDescription,
+                ogImage: presets.preset1.ogImage,
+                ogType: presets.preset1.ogType,
+                coreKeyword: '', // Initialize coreKeyword
+                presetScheme: 'preset1' // Default to preset1
             };
+
+            // This is the crucial change:
+            // After setting initial data, we must immediately update the document
+            // to ensure all meta tags (including the new og:type) are present from the start.
+            const tempDoc = doc.cloneNode(true) as Document;
+            Object.entries(initialSeoData).forEach(([key, value]) => {
+                switch (key) {
+                    case 'metaDescription': updateMetaTag(tempDoc, 'description', value as string); break;
+                    case 'keywords': updateMetaTag(tempDoc, 'keywords', value as string); break;
+                    case 'canonicalUrl': updateLinkTag(tempDoc, 'canonical', value as string); break;
+                    case 'ogTitle': updateMetaTag(tempDoc, 'og:title', value as string, 'property'); break;
+                    case 'ogDescription': updateMetaTag(tempDoc, 'og:description', value as string, 'property'); break;
+                    case 'ogImage': updateMetaTag(tempDoc, 'og:image', value as string, 'property'); break;
+                    case 'ogType': updateMetaTag(tempDoc, 'og:type', value as string, 'property'); break;
+                }
+            });
+            setProcessedDoc(tempDoc);
+            
+            // The preview doc must also be updated based on the now-modified document
+            const newPreviewDoc = prepareForPreview(tempDoc, images);
+            setPreviewDoc(newPreviewDoc);
+
 
             setSeoData(initialSeoData);
             form.setFieldsValue(initialSeoData);
@@ -137,12 +185,32 @@ const App: React.FC = () => {
                 case 'ogTitle': updateMetaTag(newDoc, 'og:title', value as string, 'property'); break;
                 case 'ogDescription': updateMetaTag(newDoc, 'og:description', value as string, 'property'); break;
                 case 'ogImage': updateMetaTag(newDoc, 'og:image', value as string, 'property'); break;
+                case 'ogType': updateMetaTag(newDoc, 'og:type', value as string, 'property'); break;
             }
         });
         
         setProcessedDoc(newDoc);
         const newPreviewDoc = prepareForPreview(newDoc, imageFiles);
         setPreviewDoc(newPreviewDoc);
+    };
+
+    const handlePresetChange = (presetKey: string) => {
+        const selectedPreset = presets[presetKey];
+        if (!selectedPreset || !processedDoc) return;
+
+        const h1 = processedDoc.querySelector('h1')?.textContent?.trim() || 'untitled';
+        const slug = generateSlug(h1);
+
+        const newValues = {
+            canonicalUrl: selectedPreset.canonicalPrefix + slug,
+            ogTitle: selectedPreset.ogTitle,
+            ogDescription: selectedPreset.ogDescription,
+            ogImage: selectedPreset.ogImage,
+            ogType: selectedPreset.ogType,
+        };
+
+        form.setFieldsValue(newValues);
+        handleFormChange(newValues);
     };
 
     const handleDownload = async () => {
@@ -187,9 +255,6 @@ const App: React.FC = () => {
             }
         });
 
-        const finalHtml = '<!DOCTYPE html>\n' + docClone.documentElement.outerHTML;
-        newZip.file(`index.html`, finalHtml);
-
         const imageAddPromises = imageFiles.map(async (imageFile) => {
             const file = originalZip.file(imageFile.originalPath);
             if (file) {
@@ -198,6 +263,27 @@ const App: React.FC = () => {
                 newZip.file(`${imageFolderName}/${fileName}`, data);
             }
         });
+        
+        // Handle OG Image
+        const ogImageValue = currentValues.ogImage;
+        if (ogImageValue && ['glbgpt.webp', 'penligent.webp'].includes(ogImageValue)) {
+            try {
+                const response = await fetch(ogImageValue);
+                const blob = await response.blob();
+                newZip.file(`${imageFolderName}/${ogImageValue}`, blob);
+                
+                // Update the meta tag to the relative path
+                updateMetaTag(docClone, 'og:image', `${imageFolderName}/${ogImageValue}`, 'property');
+
+            } catch (error) {
+                console.error(`Failed to fetch preset OG image ${ogImageValue}:`, error);
+                message.error(`无法获取预设的OG图片: ${ogImageValue}`);
+            }
+        }
+
+        const finalHtml = '<!DOCTYPE html>\n' + docClone.documentElement.outerHTML;
+        newZip.file(`index.html`, finalHtml);
+
 
         await Promise.all(imageAddPromises);
         const zipBlob = await newZip.generateAsync({ type: 'blob' });
@@ -213,7 +299,7 @@ const App: React.FC = () => {
         message.success('ZIP 包已开始下载！');
     };
 
-    const handleAiOptimization = async (provider: string) => {
+    const handleAiOptimization = async (provider: string, coreKeyword: string) => {
         const apiKey = localStorage.getItem(`${provider}_api_key`);
         if (!apiKey) {
             message.error(`请先在设置中输入您的 ${provider} API Key。`);
@@ -227,12 +313,20 @@ const App: React.FC = () => {
         
         const articleText = processedDoc.body.innerText.trim().substring(0, 4000);
         const prompt = `
-            请你扮演一位专业的SEO专家。基于以下HTML文章内容，请为我生成优化的SEO元数据。
+            请你扮演一位专业的谷歌SEO专家。我的核心关键词是 "${coreKeyword}"。
+            基于以下HTML文章内容，请围绕我的核心关键词，为我生成对谷歌搜索引擎友好的SEO元数据。
+
+            请严格遵守以下要求：
+            1.  **meta_description**: 长度必须严格控制在 140 到 160 个字符之间。内容要适合搜索引擎抓取，并自然地包含核心关键词。
+            2.  **keywords**: 字符总数（包括逗号）必须少于 100 个字符。返回 3-4 个与核心关键词最相关的关键词，用英文逗号分隔。
+
             请严格按照以下JSON格式返回，不要包含任何额外的解释或代码块标记。
+
             {
-              "meta_description": "一段140到160个字符的文章摘要，内容要吸引人点击。",
-              "keywords": "一个包含5-7个最相关关键词的字符串，用英文逗号分隔。"
+              "meta_description": "在此处生成描述",
+              "keywords": "在此处生成关键词"
             }
+
             文章内容如下:
             ---
             ${articleText}
@@ -275,6 +369,7 @@ const App: React.FC = () => {
                         onValuesChange={handleFormChange}
                         onDownload={handleDownload}
                         onAiOptimize={handleAiOptimization}
+                        onPresetChange={handlePresetChange}
                     />
                 </Sider>
                 <Content style={{ padding: '24px', backgroundColor: '#f0f2f5', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
