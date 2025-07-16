@@ -15,8 +15,12 @@
 - **🤖 AI 一键优化**: 集成多种大语言模型 API，一键为文章生成高质量的 `Meta Description` 和 `Keywords`。
   - 支持 **DeepSeek**, **OpenAI (ChatGPT)**, **Google (Gemini)**, **月之暗面 (Kimi)**。
 - **📝 全方位元标签编辑**:
-  - 提供对 `Meta Description`, `Keywords`, `Canonical URL` 的完整编辑功能。
-  - 内置两套可切换的**社交媒体分享 (Open Graph) 预设值**，方便快速填充 `og:title`, `og:description` 等标签。
+  - 提供对 `Meta Description`, `Keywords`, `Canonical URL` 的完整编辑功能，并附带实时字数统计。
+  - **高级 Open Graph (OG) 控制**:
+    - **智能同步**: `og:url` 标签会自动与 `Canonical URL` 保持同步，确保社交分享链接的统一性。
+    - **灵活的 OG 图片**: 可在两套预设的图片链接和自定义图片 URL 之间自由切换。
+    - **OG 类型设置**: 支持自定义 `og:type` 标签（默认为 `website`）。
+    - **预设方案**: 内置两套可切换的预设值，一键填充 `og:title`, `og:description` 等关键信息。
 - **🖼️ 图片 Alt 文本优化**: 自动提取所有图片，生成默认 `Alt` 文本，并支持在编辑器中实时修改。
 - **🔗 智能命名与打包**:
   - 根据 `Canonical URL` 自动生成符合 SEO 规范的 `.zip` 文件名和图片文件夹名。
