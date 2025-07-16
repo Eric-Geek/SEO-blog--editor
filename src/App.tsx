@@ -158,7 +158,11 @@ const App: React.FC = () => {
 
         const docClone = processedDoc.cloneNode(true) as Document;
 
-        // --- Final, definitive Alt Text Sync ---
+        // --- Final Cleanup and Modifications Before Download ---
+        // 1. Remove unwanted Notion styles one last time
+        removeUnwantedCss(docClone);
+
+        // 2. Final, definitive Alt Text Sync
         imageFiles.forEach(imageFile => {
             const altValue = currentValues[imageFile.originalPath];
             if (altValue !== undefined) {
