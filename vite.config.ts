@@ -5,4 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/SEO-blog--editor/', // Set the base path for GitHub Pages
+  build: {
+    outDir: 'docs', // Output to docs directory for GitHub Pages
+  },
 }) 
