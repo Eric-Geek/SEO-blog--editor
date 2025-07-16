@@ -9,7 +9,7 @@ export function removeUnwantedCss(doc: Document) {
   styleTags.forEach(styleTag => {
       let cssText = styleTag.innerHTML;
       const bodyRegex = /(body\s*\{)([\s\S]*?)(\})/g;
-      cssText = cssText.replace(bodyRegex, (match, opening, content, closing) => {
+      cssText = cssText.replace(bodyRegex, (opening, content, closing) => {
           const lines = content.split('\n');
           const newLines = lines.filter((line: string) => {
               const trimmedLine = line.trim();

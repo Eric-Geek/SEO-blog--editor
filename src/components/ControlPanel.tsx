@@ -21,7 +21,6 @@ interface ControlPanelProps {
   imageFiles: ImageFile[];
   onFileSelect: (file: File) => void;
   onValuesChange: (changedValues: any, allValues: any) => void;
-  onImageAltChange: (originalPath: string, newAlt: string) => void;
   onDownload: () => void;
   form: FormInstance; // Receive form instance from parent
   onAiOptimize: (provider: string) => void;
@@ -45,7 +44,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   imageFiles,
   onFileSelect,
   onValuesChange,
-  onImageAltChange,
   onDownload,
   form,
   onAiOptimize,
