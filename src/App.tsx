@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Layout, Typography, message, Button, Form, Radio } from 'antd';
 import JSZip from 'jszip';
 import ControlPanel, { SeoData } from './components/ControlPanel';
@@ -12,7 +12,7 @@ import {
   generateTableOfContents,
   injectTableOfContents,
   prepareForPreview,
-  addReadingProgressBar,
+  addReadingProgressBar
 } from './utils/domEnhancer';
 
 export interface ImageFile {
@@ -26,39 +26,8 @@ const { Title, Paragraph } = Typography;
 
 type Device = 'desktop' | 'tablet' | 'mobile';
 
-function R(doc: Document, seoData: SeoData, imageFiles: ImageFile[]): Document {
-  const newDoc = doc.cloneNode(true) as Document;
-  updateMetaTag(newDoc, 'description', seoData.metaDescription);
-  updateMetaTag(newDoc, 'keywords', seoData.keywords);
-  updateLinkTag(newDoc, 'canonical', seoData.canonicalUrl);
-  updateMetaTag(newDoc, 'og:title', seoData.ogTitle, 'property');
-  updateMetaTag(newDoc, 'og:description', seoData.ogDescription, 'property');
-  updateMetaTag(newDoc, 'og:image', seoData.ogImage, 'property');
-  
-  const tempBody = newDoc.body;
-  
-  removeUnwantedCss(newDoc);
-  const tocData = generateTableOfContents(newDoc);
-  if (tocData.items.length > 0) {
-    injectTableOfContents(newDoc, tocData);
-  } else {
-    addReadingProgressBar(newDoc);
-  }
-  
-  imageFiles.forEach(imageFile => {
-    const imgElement = Array.from(newDoc.querySelectorAll('img')).find(img =>
-      img.getAttribute('src')?.endsWith(imageFile.originalPath.split('/').pop() || '')
-    );
-    if (imgElement) {
-      imgElement.setAttribute('alt', imageFile.alt);
-    }
-  });
-
-  return newDoc;
-}
-
 const App: React.FC = () => {
-    const [rawDoc, setRawDoc] = useState<Document | null>(null);
+    const [processedDoc, setProcessedDoc] = useState<Document | null>(null);
     const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
     const [seoData, setSeoData] = useState<SeoData | undefined>(undefined);
     const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
@@ -67,31 +36,13 @@ const App: React.FC = () => {
     const [form] = Form.useForm();
     const [previewDevice, setPreviewDevice] = useState<Device>('desktop');
 
-    useEffect(() => {
-        if (rawDoc && seoData) {
-            const enhancedDoc = R(rawDoc, seoData, imageFiles);
-            const docForPreview = prepareForPreview(enhancedDoc, imageFiles);
-            setPreviewDoc(docForPreview);
-        }
-    }, [rawDoc, seoData, imageFiles]);
-    
     const deviceDimensions = {
       desktop: { width: '100%', height: '100%' },
       tablet: { width: '768px', height: '1024px' },
       mobile: { width: '375px', height: '667px' },
     };
 
-    const resetAllState = () => {
-        setRawDoc(null);
-        setPreviewDoc(null);
-        setSeoData(undefined);
-        setImageFiles([]);
-        setOriginalZip(null);
-        form.resetFields();
-    }
-
     const handleFileSelect = async (file: File) => {
-        resetAllState();
         try {
             const zip = await JSZip.loadAsync(file);
             setOriginalZip(zip);
@@ -119,14 +70,37 @@ const App: React.FC = () => {
             if (!htmlContent) throw new Error('ZIP包中未找到HTML文件。');
 
             const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlContent, 'text/html');
+            let doc = parser.parseFromString(htmlContent, 'text/html');
+
+            // --- ALL DOM MANIPULATIONS MUST HAPPEN HERE ---
+            // 1. Clean up Notion's default styles
+            removeUnwantedCss(doc);
             
+            // 2. Generate and inject the Table of Contents and its assets
+            const tocData = generateTableOfContents(doc);
+            if (tocData.items.length > 0) {
+                injectTableOfContents(doc, tocData);
+            } else {
+                // If there's no TOC, we still need a progress bar
+                addReadingProgressBar(doc);
+            }
+            
+            // NOW, the doc is fully enhanced.
+            // This enhanced doc is the master version for everything.
+            setProcessedDoc(doc);
+            
+            // Prepare a separate version for preview with blob URLs
+            const docForPreview = prepareForPreview(doc, images);
+            setPreviewDoc(docForPreview);
+
             images.forEach(imgData => {
                 const imgElement = doc.querySelector(`img[src="${imgData.originalPath}"]`);
-                imgData.alt = imgElement?.getAttribute('alt') || generateSlug(imgData.originalPath.split('/').pop() || '');
+                const fileName = imgData.originalPath.split('/').pop() || '';
+                const altBase = fileName.split('.').slice(0, -1).join('.');
+                imgData.alt = imgElement?.getAttribute('alt') || altBase.replace(/[-_]/g, ' ').trim();
             });
             setImageFiles(images);
-
+            
             const initialSeoData: SeoData = {
                 metaDescription: getMetaTagContent(doc, 'description'),
                 keywords: getMetaTagContent(doc, 'keywords'),
@@ -137,36 +111,67 @@ const App: React.FC = () => {
             };
 
             setSeoData(initialSeoData);
-            setRawDoc(doc);
-            
             form.setFieldsValue(initialSeoData);
             message.success('文件解析成功！');
 
         } catch (error) {
             console.error('处理ZIP文件时出错:', error);
             message.error(`处理ZIP文件失败: ${error instanceof Error ? error.message : String(error)}`);
-            resetAllState();
+            setProcessedDoc(null);
+            setPreviewDoc(null);
+            setSeoData(undefined);
+            setImageFiles([]);
+            setOriginalZip(null);
         }
     };
 
-    const handleFormChange = (_changedValues: any, allValues: SeoData) => {
-        setSeoData(allValues);
+    const handleFormChange = (changedValues: any) => {
+        if (!processedDoc) return;
+        const newDoc = processedDoc.cloneNode(true) as Document;
+
+        Object.entries(changedValues).forEach(([key, value]) => {
+            switch (key) {
+                case 'metaDescription': updateMetaTag(newDoc, 'description', value as string); break;
+                case 'keywords': updateMetaTag(newDoc, 'keywords', value as string); break;
+                case 'canonicalUrl': updateLinkTag(newDoc, 'canonical', value as string); break;
+                case 'ogTitle': updateMetaTag(newDoc, 'og:title', value as string, 'property'); break;
+                case 'ogDescription': updateMetaTag(newDoc, 'og:description', value as string, 'property'); break;
+                case 'ogImage': updateMetaTag(newDoc, 'og:image', value as string, 'property'); break;
+            }
+        });
+        
+        setProcessedDoc(newDoc);
+        const newPreviewDoc = prepareForPreview(newDoc, imageFiles);
+        setPreviewDoc(newPreviewDoc);
     };
-    
+
     const handleDownload = async () => {
-        if (!rawDoc || !seoData || !originalZip) {
-            message.error('没有可下载的文件。');
+        if (!processedDoc || !originalZip) {
+            message.error('没有可下载的文件。请先上传一个ZIP包。');
             return;
         }
-        
-        const finalDoc = R(rawDoc, seoData, imageFiles);
-        const newZip = new JSZip();
-        const finalSlug = generateSlug(extractSlugFromUrl(seoData.canonicalUrl) || seoData.ogTitle || 'untitled');
-        const imageFolderName = `${finalSlug}-img`;
-        
-        const docCloneForDownload = finalDoc.cloneNode(true) as Document;
 
-        docCloneForDownload.querySelectorAll('img').forEach(img => {
+        const newZip = new JSZip();
+        const currentValues = form.getFieldsValue(true); // Get all fields
+        const finalSlug = generateSlug(extractSlugFromUrl(currentValues.canonicalUrl) || currentValues.ogTitle || 'untitled');
+        const imageFolderName = `${finalSlug}-img`;
+
+        const docClone = processedDoc.cloneNode(true) as Document;
+
+        // --- Final, definitive Alt Text Sync ---
+        imageFiles.forEach(imageFile => {
+            const altValue = currentValues[imageFile.originalPath];
+            if (altValue !== undefined) {
+                const imgElement = Array.from(docClone.querySelectorAll('img')).find(img => 
+                    img.getAttribute('src')?.endsWith(imageFile.originalPath.split('/').pop() || '')
+                );
+                if (imgElement) {
+                    imgElement.setAttribute('alt', altValue);
+                }
+            }
+        });
+        
+        docClone.querySelectorAll('img').forEach(img => {
             const originalSrc = img.getAttribute('src');
             if (originalSrc) {
                 const fileName = originalSrc.split('/').pop() || '';
@@ -181,8 +186,8 @@ const App: React.FC = () => {
                 }
             }
         });
-        
-        const finalHtml = '<!DOCTYPE html>\n' + docCloneForDownload.documentElement.outerHTML;
+
+        const finalHtml = '<!DOCTYPE html>\n' + docClone.documentElement.outerHTML;
         newZip.file(`index.html`, finalHtml);
 
         const imageAddPromises = imageFiles.map(async (imageFile) => {
@@ -215,12 +220,12 @@ const App: React.FC = () => {
             setIsSettingsModalOpen(true);
             return;
         }
-        if (!rawDoc) {
+        if (!processedDoc) {
             message.warning('请先上传一个ZIP文件。');
             return;
         }
         
-        const articleText = rawDoc.body.innerText.trim().substring(0, 4000);
+        const articleText = processedDoc.body.innerText.trim().substring(0, 4000);
         const prompt = `
             请你扮演一位专业的SEO专家。基于以下HTML文章内容，请为我生成优化的SEO元数据。
             请严格按照以下JSON格式返回，不要包含任何额外的解释或代码块标记。
@@ -235,18 +240,18 @@ const App: React.FC = () => {
         `;
         
         try {
-            const aiResponse = provider === 'gemini' 
-                ? await callGeminiAPI(apiKey, prompt) 
-                : await callOpenAICompatibleAPI(provider, apiKey, prompt);
-
-            const newSeoData = {
-                ...form.getFieldsValue(),
-                metaDescription: aiResponse.meta_description,
-                keywords: aiResponse.keywords,
+            let seoData;
+            if (provider === 'gemini') {
+                seoData = await callGeminiAPI(apiKey, prompt);
+            } else {
+                seoData = await callOpenAICompatibleAPI(provider, apiKey, prompt);
+            }
+            const newValues = {
+                metaDescription: seoData.meta_description,
+                keywords: seoData.keywords,
             };
-            
-            form.setFieldsValue(newSeoData);
-            setSeoData(newSeoData);
+            form.setFieldsValue(newValues);
+            handleFormChange(newValues);
             message.success('AI 优化成功！');
         } catch (error) {
             console.error(`${provider} AI优化失败:`, error);

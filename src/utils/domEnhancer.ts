@@ -3,42 +3,82 @@
 /**
  * Removes unwanted CSS rules from Notion's default export styles.
  */
-function processCssRule(rule: CSSRule) {
-  // If it's a style rule that could apply to the body
-  if (rule instanceof CSSStyleRule && rule.selectorText.toLowerCase().includes('body')) {
-    // Explicitly check for the unwanted properties and remove them
-    if (rule.style.margin === '2em auto') {
-      rule.style.removeProperty('margin');
-    }
-    if (rule.style.maxWidth === '900px') {
-      rule.style.removeProperty('max-width');
-    }
-  } 
-  // If it's a media rule, we need to go inside and check its rules
-  else if (rule instanceof CSSMediaRule) {
-    Array.from(rule.cssRules).forEach(processCssRule);
-  }
-}
-
 export function removeUnwantedCss(doc: Document) {
   if (!doc) return;
   const styleTags = doc.querySelectorAll('style');
   styleTags.forEach(styleTag => {
       let cssText = styleTag.innerHTML;
-      // This regex finds all `body {...}` blocks.
-      const bodyRegex = /(body\s*\{)([\s\S]*?)(\})/g;
-  
-      cssText = cssText.replace(bodyRegex, (_match, opening, content, closing) => {
-          const lines = content.split('\n');
-          const newLines = lines.filter((line: string) => {
-              const trimmedLine = line.trim();
-              const isMarginLine = trimmedLine === 'margin: 2em auto;';
-              const isMaxWidthLine = trimmedLine === 'max-width: 900px;';
-              return !isMarginLine && !isMaxWidthLine;
+      
+      // 要删除的CSS规则列表
+      const unwantedRules = [
+          'margin: 2em auto',
+          'max-width: 900px',
+          'color: rgb(55, 53, 47)'  // 可以根据需要添加更多规则
+      ];
+      
+      // 处理所有 body 相关的样式
+      // 使用更宽松的正则表达式来匹配各种 body 选择器格式
+      const bodyPatterns = [
+          /body\s*\{[^}]*\}/gs,           // 匹配 body { ... }
+          /}body\s*\{[^}]*\}/gs,          // 匹配 }body { ... } (当body块紧跟在其他块后面)
+          /@media[^{]*\{[^}]*body\s*\{[^}]*\}[^}]*\}/gs  // 匹配 @media 中的 body
+      ];
+      
+      // 收集所有 body 规则（去重）
+      const validBodyRules = new Set<string>();
+      
+      bodyPatterns.forEach(pattern => {
+          const matches = cssText.match(pattern) || [];
+          matches.forEach(match => {
+              // 提取 body { ... } 中的内容
+              const bodyContent = match.match(/body\s*\{([^}]*)\}/s)?.[1] || '';
+              const rules = bodyContent.split(';');
+              
+              rules.forEach(rule => {
+                  const trimmedRule = rule.trim();
+                  if (trimmedRule) {
+                      // 检查是否是不想要的规则
+                      const isUnwanted = unwantedRules.some(unwanted => 
+                          trimmedRule.includes(unwanted)
+                      );
+                      if (!isUnwanted) {
+                          validBodyRules.add(trimmedRule);
+                      }
+                  }
+              });
           });
-          let newContent = newLines.join('\n');
-          return opening + newContent + closing;
       });
+      
+      // 删除所有原有的 body 块
+      bodyPatterns.forEach(pattern => {
+          cssText = cssText.replace(pattern, (match) => {
+              // 如果是 @media 块，保留 @media 结构但清空 body 内容
+              if (match.includes('@media')) {
+                  return match.replace(/body\s*\{[^}]*\}/s, '');
+              }
+              return '';
+          });
+      });
+      
+      // 如果有有效的 body 规则，在开头插入一个干净的 body 块
+      if (validBodyRules.size > 0) {
+          const cleanBodyBlock = `body {\n\t${Array.from(validBodyRules).join(';\n\t')};\n}\n\n`;
+          // 在第一个规则之前插入
+          const firstRuleMatch = cssText.match(/^\s*([a-zA-Z\.\#\*\[]|@)/m);
+          if (firstRuleMatch && firstRuleMatch.index !== undefined) {
+              cssText = cssText.slice(0, firstRuleMatch.index) + cleanBodyBlock + cssText.slice(firstRuleMatch.index);
+          } else {
+              cssText = cleanBodyBlock + cssText;
+          }
+      }
+      
+      // 清理多余的空行和格式问题
+      cssText = cssText
+          .replace(/\n{3,}/g, '\n\n')  // 将连续3个或更多换行替换为2个
+          .replace(/}\s*}/g, '}\n}')   // 修复紧贴的大括号
+          .replace(/{\s*}/g, '{}')      // 清理空的样式块
+          .trim();
+      
       styleTag.innerHTML = cssText;
   });
 }
@@ -96,8 +136,6 @@ export function injectTableOfContents(doc: Document, tocData: { items: { id: str
 
 function injectTOCStyles(doc: Document) {
   const style = doc.createElement('style');
-  // CRITICAL FIX: Ensure this CSS string ONLY contains styles for TOC and wrapper,
-  // and does NOT contain any 'body' rules.
   style.textContent = `
     .article-wrapper { display: flex; max-width: 1280px; margin: 0 auto; padding: 40px 20px; gap: 60px; position: relative; }
     .toc-container { position: sticky; top: 150px; width: 260px; max-width: 260px; min-width: 200px; height: fit-content; max-height: calc(100vh - 180px); overflow-y: auto; overflow-x: hidden; z-index: 10; }
