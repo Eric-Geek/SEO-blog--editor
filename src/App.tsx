@@ -12,6 +12,7 @@ import {
   generateTableOfContents,
   injectTableOfContents,
   prepareForPreview,
+  addReadingProgressBar
 } from './utils/domEnhancer';
 
 export interface ImageFile {
@@ -71,14 +72,24 @@ const App: React.FC = () => {
             const parser = new DOMParser();
             let doc = parser.parseFromString(htmlContent, 'text/html');
 
+            // --- ALL DOM MANIPULATIONS MUST HAPPEN HERE ---
+            // 1. Clean up Notion's default styles
             removeUnwantedCss(doc);
+            
+            // 2. Generate and inject the Table of Contents and its assets
             const tocData = generateTableOfContents(doc);
             if (tocData.items.length > 0) {
                 injectTableOfContents(doc, tocData);
+            } else {
+                // If there's no TOC, we still need a progress bar
+                addReadingProgressBar(doc);
             }
             
+            // NOW, the doc is fully enhanced.
+            // This enhanced doc is the master version for everything.
             setProcessedDoc(doc);
             
+            // Prepare a separate version for preview with blob URLs
             const docForPreview = prepareForPreview(doc, images);
             setPreviewDoc(docForPreview);
 
