@@ -390,6 +390,9 @@ const App: React.FC = () => {
                 </Content>
             </Layout>
             <SettingsModal open={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
+            <Layout.Footer style={{ textAlign: 'center', backgroundColor: '#f0f2f5', padding: '12px 24px' }}>
+                Notion SEO Editor ©2024 Created by <a href="https://github.com/Eric-Geek" target="_blank" rel="noopener noreferrer">Eric Geek</a>
+            </Layout.Footer>
         </Layout>
     );
 };
