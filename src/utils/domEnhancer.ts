@@ -7,17 +7,18 @@ export function removeUnwantedCss(doc: Document) {
   if (!doc) return;
   const styleTags = doc.querySelectorAll('style');
   styleTags.forEach(styleTag => {
-      let cssText = styleTag.innerHTML;
-      const bodyRegex = /(body\s*\{)([\s\S]*?)(\})/g;
-      cssText = cssText.replace(bodyRegex, (opening, content, closing) => {
-          const lines = content.split('\n');
-          const newLines = lines.filter((line: string) => {
-              const trimmedLine = line.trim();
-              return !['margin: 2em auto;', 'max-width: 900px;'].includes(trimmedLine);
-          });
-          return opening + newLines.join('\n') + closing;
+      const cssText = styleTag.innerHTML;
+      const lines = cssText.split('\n');
+      
+      const newLines = lines.filter(line => {
+          const trimmedLine = line.trim();
+          if (trimmedLine === 'margin: 2em auto;' || trimmedLine === 'max-width: 900px;') {
+              return false; // Exclude these specific lines
+          }
+          return true;
       });
-      styleTag.innerHTML = cssText;
+
+      styleTag.innerHTML = newLines.join('\n');
   });
 }
 
