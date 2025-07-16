@@ -97,13 +97,27 @@ const App: React.FC = () => {
             const parser = new DOMParser();
             let doc = parser.parseFromString(htmlContent, 'text/html');
 
+            // --- ALL DOM MANIPULATIONS MUST HAPPEN HERE, ON THE SAME DOC OBJECT ---
+            
+            // 1. Clean up Notion's default styles
             removeUnwantedCss(doc);
+            
+            // 2. Generate and inject the Table of Contents and its assets
             const tocData = generateTableOfContents(doc);
             if (tocData.items.length > 0) {
                 injectTableOfContents(doc, tocData);
             } else {
+                // If there's no TOC, we still need a progress bar
                 addReadingProgressBar(doc);
             }
+            
+            // NOW, the doc is fully enhanced.
+            // This enhanced doc is the master version for everything.
+            setProcessedDoc(doc);
+            
+            // Create a separate version for preview with blob URLs
+            const docForPreview = prepareForPreview(doc, images);
+            setPreviewDoc(docForPreview);
 
             images.forEach(imgData => {
                 const imgElement = doc.querySelector(`img[src="${imgData.originalPath}"]`);
@@ -145,10 +159,6 @@ const App: React.FC = () => {
             });
             setProcessedDoc(tempDoc);
             
-            const newPreviewDoc = prepareForPreview(tempDoc, images);
-            setPreviewDoc(newPreviewDoc);
-
-
             setSeoData(initialSeoData);
             form.setFieldsValue(initialSeoData);
             message.success('文件解析成功！');
@@ -166,17 +176,11 @@ const App: React.FC = () => {
 
     const handleFormChange = (changedValues: any) => {
         if (!processedDoc) return;
-
-        const newChangedValues = { ...changedValues };
-
-        if (newChangedValues.canonicalUrl !== undefined) {
-            form.setFieldsValue({ ogUrl: newChangedValues.canonicalUrl });
-            newChangedValues.ogUrl = newChangedValues.canonicalUrl;
-        }
         
+        // Always work on a fresh clone of the master doc
         const newDoc = processedDoc.cloneNode(true) as Document;
 
-        Object.entries(newChangedValues).forEach(([key, value]) => {
+        Object.entries(changedValues).forEach(([key, value]) => {
             if (value === undefined) return;
             switch (key) {
                 case 'metaDescription': updateMetaTag(newDoc, 'description', value as string); break;
@@ -190,7 +194,10 @@ const App: React.FC = () => {
             }
         });
         
+        // Update the master doc
         setProcessedDoc(newDoc);
+
+        // Update the preview doc based on the new master doc
         const newPreviewDoc = prepareForPreview(newDoc, imageFiles);
         setPreviewDoc(newPreviewDoc);
     };
