@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Layout, Typography, message, Button, Form, Radio } from 'antd';
 import JSZip from 'jszip';
 import ControlPanel, { SeoData } from './components/ControlPanel';
-import { getLinkTagHref, getMetaTagContent, updateLinkTag, updateMetaTag } from './utils/domUtils';
+import { getMetaTagContent, updateLinkTag, updateMetaTag } from './utils/domUtils';
 import { generateSlug, extractSlugFromUrl } from './utils/stringUtils';
 import { SettingOutlined } from '@ant-design/icons';
 import SettingsModal from './components/SettingsModal';
