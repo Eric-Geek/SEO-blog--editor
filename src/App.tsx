@@ -104,7 +104,7 @@ const App: React.FC = () => {
             } else {
                 addReadingProgressBar(doc);
             }
-            
+
             images.forEach(imgData => {
                 const imgElement = doc.querySelector(`img[src="${imgData.originalPath}"]`);
                 const fileName = imgData.originalPath.split('/').pop() || '';

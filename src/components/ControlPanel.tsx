@@ -31,8 +31,8 @@ interface ControlPanelProps {
   form: FormInstance<SeoData>;
 }
 
-const ControlPanel: React.FC<ControlPanelProps> = ({
-  initialData,
+const ControlPanel: React.FC<ControlPanelProps> = ({ 
+  initialData, 
   onFileSelect,
   onDownload,
   onAiOptimize,
@@ -96,7 +96,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     accept: '.zip',
     showUploadList: false,
     beforeUpload: (file) => {
-      onFileSelect(file);
+        onFileSelect(file);
       return false;
     },
   };
@@ -120,11 +120,11 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         </Form.Item>
       </Card>
       
-      <Form.Item>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <Form.Item>
+          <div style={{ display: 'flex', gap: 8 }}>
             <Select value={aiProvider} onChange={setAiProvider} style={{ flex: 1 }}>
-                <Select.Option value="deepseek">DeepSeek</Select.Option>
-                <Select.Option value="openai">OpenAI</Select.Option>
+              <Select.Option value="deepseek">DeepSeek</Select.Option>
+              <Select.Option value="openai">OpenAI</Select.Option>
                 <Select.Option value="gemini">Gemini</Select.Option>
                 <Select.Option value="kimi">Kimi</Select.Option>
             </Select>
@@ -134,10 +134,10 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 style={{ flex: 2 }}
                 loading={isAiLoading}
             >
-                ✨ AI 一键优化
+              ✨ AI 一键优化
             </Button>
-        </div>
-      </Form.Item>
+          </div>
+        </Form.Item>
 
       <Form.Item
         name="metaDescription"
