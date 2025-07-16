@@ -23,18 +23,23 @@ function processCssRule(rule: CSSRule) {
 export function removeUnwantedCss(doc: Document) {
   if (!doc) return;
   const styleTags = doc.querySelectorAll('style');
-  
   styleTags.forEach(styleTag => {
-    // The sheet property can be null in some edge cases
-    if (styleTag.sheet) {
-      try {
-        // Iterate over a copy of the rules, as the list can be modified
-        Array.from(styleTag.sheet.cssRules).forEach(processCssRule);
-      } catch (e) {
-        // This might happen due to cross-origin restrictions, though unlikely here
-        console.error("Could not process CSS rules: ", e);
-      }
-    }
+      let cssText = styleTag.innerHTML;
+      // This regex finds all `body {...}` blocks.
+      const bodyRegex = /(body\s*\{)([\s\S]*?)(\})/g;
+  
+      cssText = cssText.replace(bodyRegex, (_match, opening, content, closing) => {
+          const lines = content.split('\n');
+          const newLines = lines.filter((line: string) => {
+              const trimmedLine = line.trim();
+              const isMarginLine = trimmedLine === 'margin: 2em auto;';
+              const isMaxWidthLine = trimmedLine === 'max-width: 900px;';
+              return !isMarginLine && !isMaxWidthLine;
+          });
+          let newContent = newLines.join('\n');
+          return opening + newContent + closing;
+      });
+      styleTag.innerHTML = cssText;
   });
 }
 
