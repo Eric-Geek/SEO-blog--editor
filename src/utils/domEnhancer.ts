@@ -96,6 +96,8 @@ export function injectTableOfContents(doc: Document, tocData: { items: { id: str
 
 function injectTOCStyles(doc: Document) {
   const style = doc.createElement('style');
+  // CRITICAL FIX: Ensure this CSS string ONLY contains styles for TOC and wrapper,
+  // and does NOT contain any 'body' rules.
   style.textContent = `
     .article-wrapper { display: flex; max-width: 1280px; margin: 0 auto; padding: 40px 20px; gap: 60px; position: relative; }
     .toc-container { position: sticky; top: 150px; width: 260px; max-width: 260px; min-width: 200px; height: fit-content; max-height: calc(100vh - 180px); overflow-y: auto; overflow-x: hidden; z-index: 10; }
