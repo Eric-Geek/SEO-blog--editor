@@ -3,22 +3,38 @@
 /**
  * Removes unwanted CSS rules from Notion's default export styles.
  */
+function processCssRule(rule: CSSRule) {
+  // If it's a style rule that could apply to the body
+  if (rule instanceof CSSStyleRule && rule.selectorText.toLowerCase().includes('body')) {
+    // Explicitly check for the unwanted properties and remove them
+    if (rule.style.margin === '2em auto') {
+      rule.style.removeProperty('margin');
+    }
+    if (rule.style.maxWidth === '900px') {
+      rule.style.removeProperty('max-width');
+    }
+  } 
+  // If it's a media rule, we need to go inside and check its rules
+  else if (rule instanceof CSSMediaRule) {
+    Array.from(rule.cssRules).forEach(processCssRule);
+  }
+}
+
 export function removeUnwantedCss(doc: Document) {
   if (!doc) return;
   const styleTags = doc.querySelectorAll('style');
+  
   styleTags.forEach(styleTag => {
-      const cssText = styleTag.innerHTML;
-      const lines = cssText.split('\n');
-      
-      const newLines = lines.filter(line => {
-          const trimmedLine = line.trim();
-          if (trimmedLine === 'margin: 2em auto;' || trimmedLine === 'max-width: 900px;') {
-              return false; // Exclude these specific lines
-          }
-          return true;
-      });
-
-      styleTag.innerHTML = newLines.join('\n');
+    // The sheet property can be null in some edge cases
+    if (styleTag.sheet) {
+      try {
+        // Iterate over a copy of the rules, as the list can be modified
+        Array.from(styleTag.sheet.cssRules).forEach(processCssRule);
+      } catch (e) {
+        // This might happen due to cross-origin restrictions, though unlikely here
+        console.error("Could not process CSS rules: ", e);
+      }
+    }
   });
 }
 
