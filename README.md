@@ -14,7 +14,7 @@
 
 ---
 
-![应用截图](https://raw.githubusercontent.com/Eric-Geek/SEO-blog--editor/main/img/Snipaste_2024-05-27_01-44-30.png)
+![应用截图](https://raw.githubusercontent.com/Eric-Geek/SEO-blog--editor/main/Snipaste_2024-05-27_01-44-30.png)
 
 ## 📋 目录
 
