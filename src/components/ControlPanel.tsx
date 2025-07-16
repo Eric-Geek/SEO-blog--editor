@@ -91,12 +91,23 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     setIsAiLoading(false);
   };
 
+  const handleRemoveFile = () => {
+    // This function should reset the state in the App component
+    // For now, we can just clear the form, but a more robust solution
+    // would involve calling a prop function to reset App's state.
+    form.resetFields();
+    // Maybe call a prop to clear other state like processedDoc, imageFiles etc.
+    return true; // To confirm removal
+  };
+
   const props: UploadProps = {
     name: 'file',
     accept: '.zip',
-    showUploadList: false,
+    showUploadList: true,
+    maxCount: 1,
+    onRemove: handleRemoveFile,
     beforeUpload: (file) => {
-        onFileSelect(file);
+      onFileSelect(file);
       return false;
     },
   };
