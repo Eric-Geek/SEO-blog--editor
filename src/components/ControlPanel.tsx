@@ -14,135 +14,145 @@ export interface SeoData {
   ogTitle: string;
   ogDescription: string;
   ogImage: string;
-  ogType: string; // Add this line
+  ogUrl: string;
+  ogType: string;
   coreKeyword: string;
   presetScheme: string;
 }
 
 interface ControlPanelProps {
   initialData?: SeoData;
-  imageFiles: ImageFile[];
   onFileSelect: (file: File) => void;
-  onValuesChange: (changedValues: any, allValues: any) => void;
   onDownload: () => void;
-  form: FormInstance;
   onAiOptimize: (provider: string, coreKeyword: string) => void;
   onPresetChange: (presetKey: string) => void;
+  onValuesChange: (changedValues: any, allValues: any) => void;
+  imageFiles: ImageFile[];
+  form: FormInstance<SeoData>;
 }
 
-const ControlPanel: React.FC<ControlPanelProps> = ({ 
-  initialData, 
-  imageFiles,
+const ControlPanel: React.FC<ControlPanelProps> = ({
+  initialData,
   onFileSelect,
-  onValuesChange,
   onDownload,
-  form,
   onAiOptimize,
   onPresetChange,
+  onValuesChange,
+  imageFiles,
+  form,
 }) => {
+  const [ogImageSource, setOgImageSource] = useState('preset');
   const [aiProvider, setAiProvider] = useState('deepseek');
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [ogImageSource, setOgImageSource] = useState('preset');
 
   useEffect(() => {
     if (initialData) {
       form.setFieldsValue(initialData);
+      const ogImageValue = initialData.ogImage;
+      if (ogImageValue && ![
+          'https://static.futureshareai.com/glb_v3_bb/glbgpt.webp', 
+          'https://static.futureshareai.com/glb_v3_bb/penligent.webp'
+      ].includes(ogImageValue)) {
+        setOgImageSource('custom');
+      } else {
+        setOgImageSource('preset');
+      }
     }
   }, [initialData, form]);
-
-  useEffect(() => {
-    // Check initial value of ogImage to set the initial state of ogImageSource
-    const ogImageValue = form.getFieldValue('ogImage');
-    if (ogImageValue && !['glbgpt.webp', 'penligent.webp'].includes(ogImageValue)) {
-      setOgImageSource('custom');
-    } else {
-      setOgImageSource('preset');
-    }
-  }, [form]);
 
   const handleOgImageSourceChange = (value: string) => {
     setOgImageSource(value);
     if (value === 'preset') {
-      // When switching back to presets, we might want to set a default
-      // Here, we check the current presetScheme and set the corresponding image.
       const currentPreset = form.getFieldValue('presetScheme');
-      form.setFieldsValue({ ogImage: currentPreset === 'preset1' ? 'glbgpt.webp' : 'penligent.webp' });
+      const newOgImage = currentPreset === 'preset1' 
+        ? 'https://static.futureshareai.com/glb_v3_bb/glbgpt.webp' 
+        : 'https://static.futureshareai.com/glb_v3_bb/penligent.webp';
+      form.setFieldsValue({ ogImage: newOgImage });
+      onValuesChange({ ogImage: newOgImage }, form.getFieldsValue());
     } else {
-      // When switching to custom, clear the field
       form.setFieldsValue({ ogImage: '' });
+      onValuesChange({ ogImage: '' }, form.getFieldsValue());
     }
   };
 
   const handleOgImagePresetChange = (value: string) => {
     form.setFieldsValue({ ogImage: value });
+    onValuesChange({ ogImage: value }, form.getFieldsValue());
   };
 
-
   const handleAiClick = async () => {
+    const coreKeyword = form.getFieldValue('coreKeyword');
+    if (!coreKeyword) {
+      message.warning('请输入核心关键词以进行 AI 优化。');
+      return;
+    }
     setIsAiLoading(true);
-    const coreKeyword = form.getFieldValue('coreKeyword') || '';
     await onAiOptimize(aiProvider, coreKeyword);
     setIsAiLoading(false);
   };
 
-  const uploadProps: UploadProps = {
+  const props: UploadProps = {
     name: 'file',
     accept: '.zip',
+    showUploadList: false,
     beforeUpload: (file) => {
-      const isZip = file.type === 'application/zip' || file.name.endsWith('.zip');
-      if (!isZip) {
-        message.error(`${file.name} is not a zip file`);
-      } else {
-        onFileSelect(file);
-      }
+      onFileSelect(file);
       return false;
     },
-    maxCount: 1,
   };
 
   return (
     <Form form={form} layout="vertical" onValuesChange={onValuesChange}>
-      <Form.Item label="1. 上传 Notion 导出的 ZIP 包">
-        <Upload {...uploadProps}>
-          <Button icon={<UploadOutlined />}>选择 ZIP 文件</Button>
+      <Form.Item>
+        <Upload {...props}>
+          <Button icon={<UploadOutlined />} block>
+            上传 Notion 导出的 ZIP 包
+          </Button>
         </Upload>
       </Form.Item>
 
-      <Card size="small" style={{ marginBottom: 16 }}>
+      <Card title="1. 核心关键词" size="small">
         <Form.Item
           name="coreKeyword"
-          label="核心关键词 (Core Keyword)"
-          tooltip="输入本文最想优化的核心词，AI 将围绕它进行优化。"
+          tooltip="输入您文章最重要的核心关键词，用于 AI 生成 Description 和 Keywords"
         >
-          <Input placeholder="例如: AI website builders" />
-        </Form.Item>
-        <Form.Item>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Select value={aiProvider} onChange={setAiProvider} style={{ width: 120 }}>
-              <Select.Option value="deepseek">DeepSeek</Select.Option>
-              <Select.Option value="openai">OpenAI</Select.Option>
-              <Select.Option value="gemini">Google</Select.Option>
-              <Select.Option value="moonshot">月之暗面</Select.Option>
-            </Select>
-            <Button type="primary" block onClick={handleAiClick} loading={isAiLoading}>
-              ✨ AI 一键优化
-            </Button>
-          </div>
+          <Input placeholder="例如：最佳 Notion 模板" />
         </Form.Item>
       </Card>
+      
+      <Form.Item>
+        <div style={{ display: 'flex', gap: 8 }}>
+            <Select value={aiProvider} onChange={setAiProvider} style={{ flex: 1 }}>
+                <Select.Option value="deepseek">DeepSeek</Select.Option>
+                <Select.Option value="openai">OpenAI</Select.Option>
+                <Select.Option value="gemini">Gemini</Select.Option>
+                <Select.Option value="kimi">Kimi</Select.Option>
+            </Select>
+            <Button
+                type="primary"
+                onClick={handleAiClick}
+                style={{ flex: 2 }}
+                loading={isAiLoading}
+            >
+                ✨ AI 一键优化
+            </Button>
+        </div>
+      </Form.Item>
 
       <Form.Item
         name="metaDescription"
         label="2. Meta Description"
+        tooltip="长度建议在 140-160 个字符之间"
       >
-        <TextArea rows={4} maxLength={160} showCount />
+        <TextArea rows={4} showCount maxLength={160} />
       </Form.Item>
 
       <Form.Item
         name="keywords"
         label="3. Keywords"
+        tooltip="建议 3-4 个关键词，用英文逗号隔开"
       >
-        <Input maxLength={100} showCount />
+        <Input showCount maxLength={100} />
       </Form.Item>
 
       <Form.Item
@@ -170,17 +180,20 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         <Form.Item name="ogDescription" label="OG Description">
           <TextArea rows={4} />
         </Form.Item>
+        <Form.Item name="ogUrl" label="OG URL" tooltip="此链接将自动与上方的 Canonical URL 保持一致">
+          <Input disabled />
+        </Form.Item>
         <Form.Item label="OG Image"
-        tooltip="可选择预设图片或自定义图片链接。预设图片将包含在最终下载的 ZIP 包中。">
+        tooltip="可选择预设的图片链接或自定义图片链接。">
           <Select value={ogImageSource} onChange={handleOgImageSourceChange} style={{ width: 120, marginRight: 8 }}>
-            <Select.Option value="preset">预设图片</Select.Option>
+            <Select.Option value="preset">预设链接</Select.Option>
             <Select.Option value="custom">自定义链接</Select.Option>
           </Select>
           {ogImageSource === 'preset' ? (
             <Form.Item name="ogImage" noStyle>
               <Select style={{ width: 'calc(100% - 128px)' }} onChange={handleOgImagePresetChange}>
-                <Select.Option value="glbgpt.webp">预设 01 (glbgpt.webp)</Select.Option>
-                <Select.Option value="penligent.webp">预设 02 (penligent.webp)</Select.Option>
+                <Select.Option value="https://static.futureshareai.com/glb_v3_bb/glbgpt.webp">预设 01 (glbgpt)</Select.Option>
+                <Select.Option value="https://static.futureshareai.com/glb_v3_bb/penligent.webp">预设 02 (penligent)</Select.Option>
               </Select>
             </Form.Item>
           ) : (

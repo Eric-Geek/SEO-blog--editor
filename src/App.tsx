@@ -34,14 +34,14 @@ const presets: Record<string, Preset> = {
     canonicalPrefix: 'https://www.glbgpt.com/resource/',
     ogTitle: 'GlobalGPT Free AI Tools : All-in-One Access to ChatGPT',
     ogDescription: "Explore GlobalGPT's free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.",
-    ogImage: 'glbgpt.webp',
+    ogImage: 'https://static.futureshareai.com/glb_v3_bb/glbgpt.webp',
     ogType: 'website'
   },
   preset2: {
     canonicalPrefix: 'https://penligent.ai/blog/',
     ogTitle: 'Penligent AI: CursorOS built for Security Engineers',
     ogDescription: 'PenligentAI is building the CursorOS for security professionals — an intelligent AI-powered penetration testing tool that streamlines the entire process from reconnaissance and vulnerability scanning to exploitation and report generation. By leveraging the power of large language models (LLMs), PenligentAI runs end-to-end tests autonomously, with every step clearly traceable and transparent. It’s the secret weapon for professionals and a must-have tool for organizations conducting security assessments.',
-    ogImage: 'penligent.webp',
+    ogImage: 'https://static.futureshareai.com/glb_v3_bb/penligent.webp',
     ogType: 'website'
   }
 };
@@ -58,7 +58,7 @@ const App: React.FC = () => {
     const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
     const [originalZip, setOriginalZip] = useState<JSZip | null>(null);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-    const [form] = Form.useForm();
+    const [form] = Form.useForm<SeoData>();
     const [previewDevice, setPreviewDevice] = useState<Device>('desktop');
 
     const deviceDimensions = {
@@ -97,21 +97,13 @@ const App: React.FC = () => {
             const parser = new DOMParser();
             let doc = parser.parseFromString(htmlContent, 'text/html');
 
-            // --- ALL DOM MANIPULATIONS MUST HAPPEN HERE ---
-            // 1. Clean up Notion's default styles
             removeUnwantedCss(doc);
-            
-            // 2. Generate and inject the Table of Contents and its assets
             const tocData = generateTableOfContents(doc);
             if (tocData.items.length > 0) {
                 injectTableOfContents(doc, tocData);
             } else {
-                // If there's no TOC, we still need a progress bar
                 addReadingProgressBar(doc);
             }
-            
-            // NOW, the doc is fully enhanced.
-            // This enhanced doc is the master version for everything.
             
             images.forEach(imgData => {
                 const imgElement = doc.querySelector(`img[src="${imgData.originalPath}"]`);
@@ -124,21 +116,20 @@ const App: React.FC = () => {
             const h1 = doc.querySelector('h1')?.textContent?.trim() || 'untitled';
             const slug = generateSlug(h1);
 
+            const canonicalUrl = presets.preset1.canonicalPrefix + slug;
             const initialSeoData: SeoData = {
                 metaDescription: getMetaTagContent(doc, 'description'),
                 keywords: getMetaTagContent(doc, 'keywords'),
-                canonicalUrl: presets.preset1.canonicalPrefix + slug,
+                canonicalUrl: canonicalUrl,
                 ogTitle: presets.preset1.ogTitle,
                 ogDescription: presets.preset1.ogDescription,
                 ogImage: presets.preset1.ogImage,
+                ogUrl: canonicalUrl,
                 ogType: presets.preset1.ogType,
-                coreKeyword: '', // Initialize coreKeyword
-                presetScheme: 'preset1' // Default to preset1
+                coreKeyword: '', 
+                presetScheme: 'preset1'
             };
 
-            // This is the crucial change:
-            // After setting initial data, we must immediately update the document
-            // to ensure all meta tags (including the new og:type) are present from the start.
             const tempDoc = doc.cloneNode(true) as Document;
             Object.entries(initialSeoData).forEach(([key, value]) => {
                 switch (key) {
@@ -148,12 +139,12 @@ const App: React.FC = () => {
                     case 'ogTitle': updateMetaTag(tempDoc, 'og:title', value as string, 'property'); break;
                     case 'ogDescription': updateMetaTag(tempDoc, 'og:description', value as string, 'property'); break;
                     case 'ogImage': updateMetaTag(tempDoc, 'og:image', value as string, 'property'); break;
+                    case 'ogUrl': updateMetaTag(tempDoc, 'og:url', value as string, 'property'); break;
                     case 'ogType': updateMetaTag(tempDoc, 'og:type', value as string, 'property'); break;
                 }
             });
             setProcessedDoc(tempDoc);
             
-            // The preview doc must also be updated based on the now-modified document
             const newPreviewDoc = prepareForPreview(tempDoc, images);
             setPreviewDoc(newPreviewDoc);
 
@@ -175,9 +166,18 @@ const App: React.FC = () => {
 
     const handleFormChange = (changedValues: any) => {
         if (!processedDoc) return;
+
+        const newChangedValues = { ...changedValues };
+
+        if (newChangedValues.canonicalUrl !== undefined) {
+            form.setFieldsValue({ ogUrl: newChangedValues.canonicalUrl });
+            newChangedValues.ogUrl = newChangedValues.canonicalUrl;
+        }
+        
         const newDoc = processedDoc.cloneNode(true) as Document;
 
-        Object.entries(changedValues).forEach(([key, value]) => {
+        Object.entries(newChangedValues).forEach(([key, value]) => {
+            if (value === undefined) return;
             switch (key) {
                 case 'metaDescription': updateMetaTag(newDoc, 'description', value as string); break;
                 case 'keywords': updateMetaTag(newDoc, 'keywords', value as string); break;
@@ -185,6 +185,7 @@ const App: React.FC = () => {
                 case 'ogTitle': updateMetaTag(newDoc, 'og:title', value as string, 'property'); break;
                 case 'ogDescription': updateMetaTag(newDoc, 'og:description', value as string, 'property'); break;
                 case 'ogImage': updateMetaTag(newDoc, 'og:image', value as string, 'property'); break;
+                case 'ogUrl': updateMetaTag(newDoc, 'og:url', value as string, 'property'); break;
                 case 'ogType': updateMetaTag(newDoc, 'og:type', value as string, 'property'); break;
             }
         });
@@ -201,12 +202,14 @@ const App: React.FC = () => {
         const h1 = processedDoc.querySelector('h1')?.textContent?.trim() || 'untitled';
         const slug = generateSlug(h1);
 
+        const canonicalUrl = selectedPreset.canonicalPrefix + slug;
         const newValues = {
-            canonicalUrl: selectedPreset.canonicalPrefix + slug,
+            canonicalUrl: canonicalUrl,
             ogTitle: selectedPreset.ogTitle,
             ogDescription: selectedPreset.ogDescription,
             ogImage: selectedPreset.ogImage,
             ogType: selectedPreset.ogType,
+            ogUrl: canonicalUrl,
         };
 
         form.setFieldsValue(newValues);
@@ -220,13 +223,12 @@ const App: React.FC = () => {
         }
 
         const newZip = new JSZip();
-        const currentValues = form.getFieldsValue(true); // Get all fields
+        const currentValues = form.getFieldsValue(true);
         const finalSlug = generateSlug(extractSlugFromUrl(currentValues.canonicalUrl) || currentValues.ogTitle || 'untitled');
         const imageFolderName = `${finalSlug}-img`;
 
         const docClone = processedDoc.cloneNode(true) as Document;
 
-        // --- Final, definitive Alt Text Sync ---
         imageFiles.forEach(imageFile => {
             const altValue = currentValues[imageFile.originalPath];
             if (altValue !== undefined) {
@@ -255,6 +257,9 @@ const App: React.FC = () => {
             }
         });
 
+        const finalHtml = '<!DOCTYPE html>\n' + docClone.documentElement.outerHTML;
+        newZip.file(`index.html`, finalHtml);
+
         const imageAddPromises = imageFiles.map(async (imageFile) => {
             const file = originalZip.file(imageFile.originalPath);
             if (file) {
@@ -263,27 +268,6 @@ const App: React.FC = () => {
                 newZip.file(`${imageFolderName}/${fileName}`, data);
             }
         });
-        
-        // Handle OG Image
-        const ogImageValue = currentValues.ogImage;
-        if (ogImageValue && ['glbgpt.webp', 'penligent.webp'].includes(ogImageValue)) {
-            try {
-                const response = await fetch(ogImageValue);
-                const blob = await response.blob();
-                newZip.file(`${imageFolderName}/${ogImageValue}`, blob);
-                
-                // Update the meta tag to the relative path
-                updateMetaTag(docClone, 'og:image', `${imageFolderName}/${ogImageValue}`, 'property');
-
-            } catch (error) {
-                console.error(`Failed to fetch preset OG image ${ogImageValue}:`, error);
-                message.error(`无法获取预设的OG图片: ${ogImageValue}`);
-            }
-        }
-
-        const finalHtml = '<!DOCTYPE html>\n' + docClone.documentElement.outerHTML;
-        newZip.file(`index.html`, finalHtml);
-
 
         await Promise.all(imageAddPromises);
         const zipBlob = await newZip.generateAsync({ type: 'blob' });
