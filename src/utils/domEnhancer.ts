@@ -83,85 +83,243 @@ export function injectTableOfContents(doc: Document, tocData: { items: { id: str
 }
 
 function injectTOCStyles(doc: Document) {
-  const style = doc.createElement('style');
-  style.textContent = `
-    .article-wrapper { 
-        max-width: 720px; /* This now only controls the content width */
-        margin: 0 auto; /* This centers the content column */
-        position: relative;
-    }
-    .main-content { 
-        min-width: 0;
-    }
-    .toc-container { 
+    const style = doc.createElement('style');
+    style.textContent = `
+  .article-wrapper { 
+      max-width: 720px;
+      margin: 0 auto;
+      position: relative;
+  }
+  
+  .main-content { 
+      min-width: 0;
+  }
+  
+  .toc-container { 
       position: fixed;
       top: 150px;
-      /* Dynamic calculation for horizontal positioning */
-      left: calc(50% - 360px - 60px - 260px); /* (50% viewport) - (half content width) - (gap) - (toc width) */
+      left: calc(50% - 360px - 60px - 260px);
       width: 260px; 
       max-height: calc(100vh - 180px); 
       overflow-y: auto; 
       z-index: 1000;
-    }
-    
-    /* Hide TOC on screens that are too narrow */
-    @media (max-width: 1080px) {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+  }
+  
+  /* 简化滚动条 */
+  .toc-container::-webkit-scrollbar {
+      width: 4px;
+  }
+  
+  .toc-container::-webkit-scrollbar-track {
+      background: transparent;
+  }
+  
+  .toc-container::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 2px;
+  }
+  
+  @media (max-width: 1080px) {
       .toc-container {
-        display: none;
+          display: none;
       }
-    }
-    
-    /* Keep other essential styles */
-    .toc-title { margin: 0 0 24px 0; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #6b7280; padding-left: 16px; }
-    .toc-list { list-style: none; padding: 0; margin: 0; }
-    .toc-list li { margin: 0; position: relative; }
-    .toc-link { display: block; color: #6b7280; text-decoration: none; padding: 10px 16px; margin: 4px 0; font-size: 14px; line-height: 1.6; border-left: 3px solid transparent; border-radius: 6px; transition: all 0.3s ease-in-out; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .toc-link:hover { color: #111827; background-color: #f3f4f6; transform: translateX(4px); }
-    h2[id^="section-"] { scroll-margin-top: 80px; position: relative; }
-    .reading-progress { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(to right, #2563eb, #3b82f6); z-index: 1000; transition: width 0.3s ease; }
-  `;
-  doc.head.appendChild(style);
+  }
+  
+  .toc-title { 
+      margin: 0 0 20px 0; 
+      font-size: 13px; 
+      font-weight: 600; 
+      letter-spacing: 0.05em; 
+      text-transform: uppercase; 
+      color: #6b7280;
+  }
+  
+  .toc-list { 
+      list-style: none; 
+      padding: 0; 
+      margin: 0; 
+  }
+  
+  /* 移除所有伪元素和列表样式 */
+  .toc-list::before,
+  .toc-list::after {
+      display: none !important;
+  }
+  
+  .toc-list li { 
+      margin: 0;
+      padding: 0;
+      position: relative;
+      list-style: none !important;
+  }
+  
+  .toc-list li::before,
+  .toc-list li::after {
+      display: none !important;
+  }
+  
+  .toc-link { 
+    display: block; 
+    color: #4b5563; 
+    text-decoration: none; 
+    padding: 10px 8px;
+    margin: 0 -8px;
+    font-size: 14px; 
+    line-height: 1.6;
+    transition: all 0.15s ease;
+    /* 允许自然换行 */
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    cursor: pointer;
+    border-radius: 6px;
 }
 
-function injectTOCScript(doc: Document) {
+/* 悬停效果 */
+.toc-link:hover { 
+    color: #111827;
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* 点击效果 */
+.toc-link:active {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+}
+
+/* 当前阅读位置 - 用户点击后保持的状态 */
+.toc-link.current {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+    font-weight: 500;
+}
+  
+  /* 章节标题样式 */
+  h2[id^="section-"] { 
+      scroll-margin-top: 80px; 
+      position: relative;
+  }
+  
+  /* 阅读进度条 */
+  .reading-progress { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      height: 2px; 
+      background: #2563eb;
+      z-index: 1000; 
+      transition: width 0.2s ease-out;
+  }
+    `;
+    doc.head.appendChild(style);
+  }
+
+  function injectTOCScript(doc: Document) {
     const script = doc.createElement('script');
     script.textContent = `
       (function() {
+          // 平滑滚动功能
           document.querySelectorAll('.toc-link').forEach(link => {
               link.addEventListener('click', function(e) {
                   e.preventDefault();
-                  document.getElementById(this.getAttribute('href').substring(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  
+                  // 移除所有当前标记
+                  document.querySelectorAll('.toc-link').forEach(l => {
+                      l.classList.remove('current');
+                  });
+                  
+                  // 给点击的链接添加当前标记
+                  this.classList.add('current');
+                  
+                  // 滚动到对应位置
+                  document.getElementById(this.getAttribute('href').substring(1))?.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'start' 
+                  });
               });
           });
-          const sections = Array.from(doc.querySelectorAll('h2[id^="section-"]'));
-          const tocLinks = Array.from(doc.querySelectorAll('.toc-link'));
-          function highlightCurrentSection() {
-              const scrollPosition = window.scrollY + 100;
-              let activeSection = sections.findLast(section => section.offsetTop <= scrollPosition);
-              tocLinks.forEach(link => {
-                  link.classList.remove('active');
-                  if (activeSection && link.getAttribute('href') === '#' + activeSection.id) {
-                      link.classList.add('active');
+          
+          const sections = Array.from(document.querySelectorAll('h2[id^="section-"]'));
+          const tocContainer = document.querySelector('.toc-container');
+          
+          // 查找 Relevant Resources 部分
+          function findRelevantResourcesSection() {
+              const h2Elements = document.querySelectorAll('h2');
+              for (let h2 of h2Elements) {
+                  const text = h2.textContent.toLowerCase();
+                  if (text.includes('relevant resources') || 
+                      text.includes('related resources') || 
+                      text.includes('相关资源')) {
+                      return h2;
                   }
-              });
+              }
+              return sections[sections.length - 1];
           }
-          let scrollTimer;
-          window.addEventListener('scroll', () => {
-              if (scrollTimer) clearTimeout(scrollTimer);
-              scrollTimer = setTimeout(highlightCurrentSection, 50);
-          }, { passive: true });
-          setTimeout(highlightCurrentSection, 100);
+          
+          // 动态定位目录
+          function adjustTocPosition() {
+              if (!tocContainer) return;
+              
+              const relevantResourcesSection = findRelevantResourcesSection();
+              if (!relevantResourcesSection) return;
+              
+              const scrollY = window.scrollY;
+              const windowHeight = window.innerHeight;
+              const tocHeight = tocContainer.offsetHeight;
+              const articleWrapper = document.querySelector('.article-wrapper');
+              
+              const sectionRect = relevantResourcesSection.getBoundingClientRect();
+              const sectionBottom = sectionRect.bottom + scrollY;
+              const stopPosition = sectionBottom - tocHeight;
+              
+              if (scrollY + 150 + tocHeight > stopPosition) {
+                  tocContainer.classList.add('pinned-to-bottom');
+                  if (articleWrapper) {
+                      tocContainer.style.position = 'absolute';
+                      tocContainer.style.top = (stopPosition - articleWrapper.offsetTop) + 'px';
+                      tocContainer.style.left = '-320px';
+                  }
+              } else {
+                  tocContainer.classList.remove('pinned-to-bottom');
+                  tocContainer.style.position = 'fixed';
+                  tocContainer.style.top = '150px';
+                  tocContainer.style.left = 'calc(50% - 360px - 60px - 260px)';
+              }
+          }
+          
+          // 更新阅读进度
           function updateReadingProgress() {
               const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
               const scrolled = (scrollTop / (scrollHeight - clientHeight)) * 100;
               const progressBar = document.querySelector('.reading-progress');
               if(progressBar) progressBar.style.width = scrolled + '%';
           }
-          window.addEventListener('scroll', updateReadingProgress, { passive: true });
+          
+          // 综合滚动处理
+          let scrollTimer;
+          function handleScroll() {
+              if (scrollTimer) clearTimeout(scrollTimer);
+              scrollTimer = setTimeout(() => {
+                  adjustTocPosition();
+                  updateReadingProgress();
+              }, 50);
+          }
+          
+          // 监听滚动事件
+          window.addEventListener('scroll', handleScroll, { passive: true });
+          window.addEventListener('resize', adjustTocPosition, { passive: true });
+          
+          // 初始化
+          setTimeout(() => {
+              adjustTocPosition();
+          }, 100);
       })();
     `;
     doc.body.appendChild(script);
-}
+  }
 
 /**
  * Adds the reading progress bar to the document.
