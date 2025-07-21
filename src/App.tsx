@@ -265,7 +265,7 @@ const App: React.FC = () => {
         });
 
         const finalHtml = '<!DOCTYPE html>\n' + docClone.documentElement.outerHTML;
-        newZip.file(`index.html`, finalHtml);
+        newZip.file(`${finalSlug}/index.html`, finalHtml);
 
         const imageAddPromises = imageFiles.map(async (imageFile) => {
             const file = originalZip.file(imageFile.originalPath);
