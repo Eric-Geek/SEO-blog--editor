@@ -38,7 +38,7 @@ const presets: Record<string, Preset> = {
     ogType: 'website'
   },
   preset2: {
-    canonicalPrefix: 'https://penligent.ai/blog/',
+    canonicalPrefix: 'https://penligent.ai/resources/blog/',
     ogTitle: 'Penligent AI: CursorOS built for Security Engineers',
     ogDescription: 'PenligentAI is building the CursorOS for security professionals — an intelligent AI-powered penetration testing tool that streamlines the entire process from reconnaissance and vulnerability scanning to exploitation and report generation. By leveraging the power of large language models (LLMs), PenligentAI runs end-to-end tests autonomously, with every step clearly traceable and transparent. It’s the secret weapon for professionals and a must-have tool for organizations conducting security assessments.',
     ogImage: 'https://static.futureshareai.com/glb_v3_bb/penligent.webp',
