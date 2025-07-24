@@ -2,7 +2,7 @@ export async function callOpenAICompatibleAPI(provider: string, apiKey: string, 
     const apiDetails = {
         openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-3.5-turbo' },
         deepseek: { url: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat' },
-        moonshot: { url: 'https://api.moonshot.cn/v1/chat/completions', model: 'moonshot-v1-8k' }
+        kimi: { url: 'https://api.moonshot.cn/v1/chat/completions', model: 'moonshot-v1-8k' }
     };
 
     const { url, model } = apiDetails[provider as keyof typeof apiDetails];

@@ -11,7 +11,7 @@ const providers = [
   { key: 'deepseek', label: 'DeepSeek' },
   { key: 'openai', label: 'OpenAI' },
   { key: 'gemini', label: 'Google' },
-  { key: 'moonshot', label: '月之暗面' },
+  { key: 'kimi', label: 'Kimi' },
 ];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) => {
