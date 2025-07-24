@@ -41,44 +41,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   imageFiles,
   form,
 }) => {
-  const [ogImageSource, setOgImageSource] = useState('preset');
   const [aiProvider, setAiProvider] = useState('deepseek');
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
     if (initialData) {
       form.setFieldsValue(initialData);
-      const ogImageValue = initialData.ogImage;
-      if (ogImageValue && ![
-          'https://static.futureshareai.com/glb_v3_bb/glbgpt.webp', 
-          'https://static.futureshareai.com/glb_v3_bb/penligent.webp'
-      ].includes(ogImageValue)) {
-        setOgImageSource('custom');
-      } else {
-        setOgImageSource('preset');
-      }
     }
   }, [initialData, form]);
-
-  const handleOgImageSourceChange = (value: string) => {
-    setOgImageSource(value);
-    if (value === 'preset') {
-      const currentPreset = form.getFieldValue('presetScheme');
-      const newOgImage = currentPreset === 'preset1' 
-        ? 'https://static.futureshareai.com/glb_v3_bb/glbgpt.webp' 
-        : 'https://static.futureshareai.com/glb_v3_bb/penligent.webp';
-      form.setFieldsValue({ ogImage: newOgImage });
-      onValuesChange({ ogImage: newOgImage }, form.getFieldsValue());
-    } else {
-      form.setFieldsValue({ ogImage: '' });
-      onValuesChange({ ogImage: '' }, form.getFieldsValue());
-    }
-  };
-
-  const handleOgImagePresetChange = (value: string) => {
-    form.setFieldsValue({ ogImage: value });
-    onValuesChange({ ogImage: value }, form.getFieldsValue());
-  };
 
   const handleAiClick = async () => {
     const coreKeyword = form.getFieldValue('coreKeyword');
@@ -194,24 +164,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         <Form.Item name="ogUrl" label="OG URL" tooltip="此链接将自动与上方的 Canonical URL 保持一致">
           <Input disabled />
         </Form.Item>
-        <Form.Item label="OG Image"
-        tooltip="可选择预设的图片链接或自定义图片链接。">
-          <Select value={ogImageSource} onChange={handleOgImageSourceChange} style={{ width: 120, marginRight: 8 }}>
-            <Select.Option value="preset">预设链接</Select.Option>
-            <Select.Option value="custom">自定义链接</Select.Option>
-          </Select>
-          {ogImageSource === 'preset' ? (
-            <Form.Item name="ogImage" noStyle>
-              <Select style={{ width: 'calc(100% - 128px)' }} onChange={handleOgImagePresetChange}>
-                <Select.Option value="https://static.futureshareai.com/glb_v3_bb/glbgpt.webp">预设 01 (glbgpt)</Select.Option>
-                <Select.Option value="https://static.futureshareai.com/glb_v3_bb/penligent.webp">预设 02 (penligent)</Select.Option>
-              </Select>
-            </Form.Item>
-          ) : (
-            <Form.Item name="ogImage" noStyle>
-              <Input style={{ width: 'calc(100% - 128px)' }} placeholder="输入图片链接" />
-            </Form.Item>
-          )}
+        <Form.Item name="ogImage" label="OG Image" tooltip="OG Image 将根据 Canonical URL 和文章第二张图片自动生成">
+          <Input disabled />    
         </Form.Item>
         <Form.Item name="ogType" label="OG Type" tooltip="建议使用 article 或 website">
           <Input />

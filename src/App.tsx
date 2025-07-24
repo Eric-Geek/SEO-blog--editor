@@ -22,26 +22,23 @@ export interface ImageFile {
 }
 
 interface Preset {
-  canonicalPrefix: string;
-  ogTitle: string;
-  ogDescription: string;
-  ogImage: string;
-  ogType: string;
-}
+    canonicalPrefix: string;
+    ogTitle: string;
+    ogDescription: string;
+    ogType: string;
+  }
 
 const presets: Record<string, Preset> = {
   preset1: {
     canonicalPrefix: 'https://www.glbgpt.com/resource/',
     ogTitle: 'GlobalGPT Free AI Tools : All-in-One Access to ChatGPT',
     ogDescription: "Explore GlobalGPT's free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.",
-    ogImage: 'https://static.futureshareai.com/glb_v3_bb/glbgpt.webp',
     ogType: 'website'
   },
   preset2: {
     canonicalPrefix: 'https://penligent.ai/resources/blog/',
     ogTitle: 'Penligent AI: Cursor built for Cyber Security Engineers',
     ogDescription: 'PenligentAI is building the Cursor for Cyber Security professionals — an intelligent AI-powered penetration testing tool that streamlines the entire process from reconnaissance and vulnerability scanning to exploitation and report generation. By leveraging the power of large language models (LLMs), PenligentAI runs end-to-end tests autonomously, with every step clearly traceable and transparent. It’s the secret weapon for professionals and a must-have tool for organizations conducting security assessments.',
-    ogImage: 'https://static.futureshareai.com/glb_v3_bb/penligent.webp',
     ogType: 'website'
   }
 };
@@ -65,6 +62,17 @@ const App: React.FC = () => {
       desktop: { width: '100%', height: '100%' },
       tablet: { width: '768px', height: '1024px' },
       mobile: { width: '375px', height: '667px' },
+    };
+    
+    const generateOgImageUrl = (canonicalUrl: string, images: ImageFile[]): string => {
+        // 获取第二张图片（索引为1）
+        if (images.length >= 2) {
+            const secondImage = images[1];
+            const fileName = secondImage.originalPath.split('/').pop() || '';
+            return `${canonicalUrl}-img/${fileName}`;
+        }
+        // 如果没有第二张图片，返回空字符串
+        return '';
     };
 
     const handleFileSelect = async (file: File) => {
@@ -125,19 +133,33 @@ const App: React.FC = () => {
                 const altBase = fileName.split('.').slice(0, -1).join('.');
                 imgData.alt = imgElement?.getAttribute('alt') || altBase.replace(/[-_]/g, ' ').trim();
             });
-            setImageFiles(images);
+            const sortedImages: ImageFile[] = [];
+            const allImgElements = doc.querySelectorAll('img');
+            allImgElements.forEach(imgElement => {
+                const imgSrc = imgElement.getAttribute('src');
+                if (!imgSrc) return;
+                const foundImage = images.find(imageFile => {
+                    const fileName = imageFile.originalPath.split('/').pop() || '';
+                    return imageFile.originalPath === imgSrc || imgSrc === fileName || imgSrc.endsWith('/' + fileName);
+                });
+                if (foundImage && !sortedImages.includes(foundImage)) {
+                    sortedImages.push(foundImage);
+                }
+            });
+            setImageFiles(sortedImages);
             
             const h1 = doc.querySelector('h1')?.textContent?.trim() || 'untitled';
             const slug = generateSlug(h1);
 
             const canonicalUrl = presets.preset1.canonicalPrefix + slug;
+            const ogImageUrl = generateOgImageUrl(canonicalUrl, sortedImages);
             const initialSeoData: SeoData = {
-                metaDescription: getMetaTagContent(doc, 'description'),
+                metaDescription: getMetaTagContent(doc, 'description'), 
                 keywords: getMetaTagContent(doc, 'keywords'),
                 canonicalUrl: canonicalUrl,
                 ogTitle: presets.preset1.ogTitle,
                 ogDescription: presets.preset1.ogDescription,
-                ogImage: presets.preset1.ogImage,
+                ogImage: ogImageUrl,
                 ogUrl: canonicalUrl,
                 ogType: presets.preset1.ogType,
                 coreKeyword: '', 
@@ -176,6 +198,18 @@ const App: React.FC = () => {
 
     const handleFormChange = (changedValues: any) => {
         if (!processedDoc) return;
+
+
+        if (changedValues.canonicalUrl) {
+            const newOgImage = generateOgImageUrl(changedValues.canonicalUrl, imageFiles);
+            changedValues.ogImage = newOgImage;
+            changedValues.ogUrl = changedValues.canonicalUrl;
+            // 同时更新表单
+            form.setFieldsValue({ 
+                ogImage: newOgImage,
+                ogUrl: changedValues.canonicalUrl
+            });
+        }
         
         // Always work on a fresh clone of the master doc
         const newDoc = processedDoc.cloneNode(true) as Document;
@@ -210,11 +244,12 @@ const App: React.FC = () => {
         const slug = generateSlug(h1);
 
         const canonicalUrl = selectedPreset.canonicalPrefix + slug;
+        const ogImageUrl = generateOgImageUrl(canonicalUrl, imageFiles);
         const newValues = {
             canonicalUrl: canonicalUrl,
             ogTitle: selectedPreset.ogTitle,
             ogDescription: selectedPreset.ogDescription,
-            ogImage: selectedPreset.ogImage,
+            ogImage: ogImageUrl,
             ogType: selectedPreset.ogType,
             ogUrl: canonicalUrl,
         };
@@ -235,6 +270,10 @@ const App: React.FC = () => {
         const imageFolderName = `${finalSlug}-img`;
 
         const docClone = processedDoc.cloneNode(true) as Document;
+        const finalOgImage = generateOgImageUrl(currentValues.canonicalUrl, imageFiles);
+        if (finalOgImage) {
+            updateMetaTag(docClone, 'og:image', finalOgImage, 'property');
+        }
 
         imageFiles.forEach(imageFile => {
             const altValue = currentValues[imageFile.originalPath];
