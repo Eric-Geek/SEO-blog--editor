@@ -136,9 +136,9 @@ npm run preview
 | 服务商 | 模型 | 特点 | API 端点 |
 |--------|------|------|----------|
 | **DeepSeek** | deepseek-chat | 高性价比，中文优化 | api.deepseek.com |
-| **OpenAI** | gpt-3.5-turbo | 业界标准，稳定可靠 | api.openai.com |
+| **OpenAI** | gpt-4o | 业界标准，稳定可靠 | api.openai.com |
 | **Gemini** | gemini-pro | Google 多模态AI | generativelanguage.googleapis.com |
-| **Kimi** | moonshot-v1-8k | 长文本处理能力强 | api.moonshot.cn |
+| **Kimi** | Kimi-k2 | 长文本处理能力强 | api.moonshot.cn |
 
 ### API Key 管理
 - 所有 API Key 仅保存在浏览器本地存储
