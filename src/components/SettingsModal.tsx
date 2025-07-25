@@ -96,25 +96,25 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) => {
 
   const tabItems: TabsProps['items'] = [
     ...providers.map(provider => ({
-      key: provider.key,
-      label: provider.label,
-      children: (
+    key: provider.key,
+    label: provider.label,
+    children: (
         <div>
           <p style={{ marginBottom: 16 }}>输入您的 {provider.label} API Key。密钥将仅保存在您的浏览器中。</p>
           <Form form={form} layout="vertical">
-            <Form.Item
-              name={provider.key}
-              label={`${provider.label} API Key:`}
-              initialValue={localStorage.getItem(`${provider.key}_api_key`) || ''}
-            >
-              <Input.Password placeholder="sk-..." />
-            </Form.Item>
+      <Form.Item
+        name={provider.key}
+        label={`${provider.label} API Key:`}
+        initialValue={localStorage.getItem(`${provider.key}_api_key`) || ''}
+      >
+        <Input.Password placeholder="sk-..." />
+      </Form.Item>
             <Button type="primary" onClick={handleSave}>
               保存
             </Button>
           </Form>
         </div>
-      ),
+    ),
     })),
     {
       key: 'changelog',
@@ -129,15 +129,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) => {
       open={open}
       onCancel={onClose}
       width={600}
-      footer={[
-        <Button key="back" onClick={onClose}>
-          关闭
-        </Button>,
-      ]}
+      footer={null}
     >
-      <Tabs defaultActiveKey="deepseek" items={tabItems} />
+        <Tabs defaultActiveKey="deepseek" items={tabItems} />
     </Modal>
   );
 };
 
-export default SettingsModal; 
+export default SettingsModal;
