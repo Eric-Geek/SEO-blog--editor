@@ -8,7 +8,7 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
   {
     version: '1.3.0',
-    date: '2025-01-10',
+    date: '2025-07-25',
     type: 'feature',
     changes: [
       'Added AI-powered content type detection for OG Title',
@@ -19,7 +19,7 @@ export const changelog: ChangelogEntry[] = [
   },
   {
     version: '1.2.0',
-    date: '2025-01-08',
+    date: '2025-07-24',
     type: 'feature',
     changes: [
       'Added automatic OG Image generation based on Canonical URL and second image',
@@ -29,7 +29,7 @@ export const changelog: ChangelogEntry[] = [
   },
   {
     version: '1.1.0',
-    date: '2024-12-20',
+    date: '2025-07-16',
     type: 'improvement',
     changes: [
       'Enhanced preview mode with desktop/tablet/mobile views',
@@ -40,7 +40,7 @@ export const changelog: ChangelogEntry[] = [
   },
   {
     version: '1.0.0',
-    date: '2024-12-01',
+    date: '2025-07-16',
     type: 'feature',
     changes: [
       'Initial release',
