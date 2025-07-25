@@ -12,6 +12,9 @@ export interface SeoData {
   keywords: string;
   canonicalUrl: string;
   ogTitle: string;
+  ogTitleArticleName: string;  // 新增：文章名
+  ogTitleBrandName: string;     // 新增：品牌名
+  ogTitleContentType: string;   // 新增：内容类型
   ogDescription: string;
   ogImage: string;
   ogUrl: string;
@@ -155,8 +158,23 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       </Form.Item>
 
       <Card title="5. 社交媒体 Meta 标签 (Open Graph)" size="small">
-        <Form.Item name="ogTitle" label="OG Title">
-          <Input />
+        <Form.Item label="OG Title 组成部分" style={{ marginBottom: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Form.Item name="ogTitleArticleName" noStyle>
+              <Input placeholder="文章名" style={{ flex: 1, minWidth: 150 }} />
+            </Form.Item>
+            <span style={{ padding: '4px 8px' }}>-</span>
+            <Form.Item name="ogTitleBrandName" noStyle>
+              <Input placeholder="品牌名" style={{ flex: 1, minWidth: 120 }} />
+            </Form.Item>
+            <span style={{ padding: '4px 8px' }}>|</span>
+            <Form.Item name="ogTitleContentType" noStyle>
+              <Input placeholder="内容类型" style={{ flex: 1, minWidth: 100 }} />
+            </Form.Item>
+          </div>
+        </Form.Item>
+        <Form.Item name="ogTitle" label="完整 OG Title" tooltip="根据上方三个部分自动生成">
+          <Input disabled />
         </Form.Item>
         <Form.Item name="ogDescription" label="OG Description">
           <TextArea rows={4} />

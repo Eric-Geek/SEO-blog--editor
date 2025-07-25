@@ -23,6 +23,7 @@ export interface ImageFile {
 
 interface Preset {
     canonicalPrefix: string;
+    brandName: string;  // 新增品牌名字段
     ogTitle: string;
     ogDescription: string;
     ogType: string;
@@ -31,14 +32,16 @@ interface Preset {
 const presets: Record<string, Preset> = {
   preset1: {
     canonicalPrefix: 'https://www.glbgpt.com/resource/',
+    brandName: 'GlobalGPT',  // 新增
     ogTitle: 'GlobalGPT Free AI Tools : All-in-One Access to ChatGPT',
     ogDescription: "Explore GlobalGPT's free AI models and tools. Enjoy ChatGPT and top models for coding, content creation, and multimedia generation—no account switching needed.",
     ogType: 'website'
   },
   preset2: {
     canonicalPrefix: 'https://penligent.ai/resources/blog/',
+    brandName: 'Penligent AI',  // 新增
     ogTitle: 'Penligent AI: Cursor built for Cyber Security Engineers',
-    ogDescription: 'PenligentAI is building the Cursor for Cyber Security professionals — an intelligent AI-powered penetration testing tool that streamlines the entire process from reconnaissance and vulnerability scanning to exploitation and report generation. By leveraging the power of large language models (LLMs), PenligentAI runs end-to-end tests autonomously, with every step clearly traceable and transparent. It’s the secret weapon for professionals and a must-have tool for organizations conducting security assessments.',
+    ogDescription: 'PenligentAI is building the Cursor for Cyber Security professionals — an intelligent AI-powered penetration testing tool that streamlines the entire process from reconnaissance and vulnerability scanning to exploitation and report generation. By leveraging the power of large language models (LLMs), PenligentAI runs end-to-end tests autonomously, with every step clearly traceable and transparent. It\'s the secret weapon for professionals and a must-have tool for organizations conducting security assessments.',
     ogType: 'website'
   }
 };
@@ -47,6 +50,60 @@ const { Header, Content, Sider } = Layout;
 const { Title, Paragraph } = Typography;
 
 type Device = 'desktop' | 'tablet' | 'mobile';
+
+// 新增：生成 OG Title 的辅助函数
+const generateOgTitle = (articleName: string, brandName: string, contentType: string): string => {
+  return `${articleName} - ${brandName} | ${contentType}`;
+};
+
+// 新增：生成初始 OG Description 的函数
+const generateInitialOgDescription = (doc: Document, articleTitle: string): string => {
+  const text = doc.body?.textContent || '';
+  const firstParagraph = doc.querySelector('p')?.textContent?.trim() || '';
+  
+  // 尝试从文章中提取关键信息
+  let description = '';
+  
+  if (firstParagraph.length > 50) {
+    // 如果第一段足够长，使用第一段的前100个字符
+    description = firstParagraph.substring(0, 100).trim() + '...';
+  } else {
+    // 否则使用文章标题和简短描述
+    description = `Learn about ${articleTitle}. `;
+    if (text.includes('how to') || text.includes('guide')) {
+      description += 'Step-by-step guide included.';
+    } else if (text.includes('tips') || text.includes('best practices')) {
+      description += 'Expert tips and best practices.';
+    } else {
+      description += 'Read more →';
+    }
+  }
+  
+  // 确保长度不超过125字符
+  if (description.length > 125) {
+    description = description.substring(0, 122) + '...';
+  }
+  
+  return description;
+};
+
+// 新增：根据文章内容推测内容类型的函数
+const inferContentType = (doc: Document): string => {
+  const text = doc.body?.textContent?.toLowerCase() || '';
+  
+  // 简单的内容类型推断逻辑
+  if (text.includes('教程') || text.includes('指南') || text.includes('如何') || text.includes('tutorial') || text.includes('guide') || text.includes('how to')) {
+    return 'Tutorial';
+  } else if (text.includes('新闻') || text.includes('发布') || text.includes('更新') || text.includes('news') || text.includes('release') || text.includes('update')) {
+    return 'News';
+  } else if (text.includes('评测') || text.includes('对比') || text.includes('测评') || text.includes('review') || text.includes('comparison')) {
+    return 'Review';
+  } else if (text.includes('案例') || text.includes('实践') || text.includes('经验') || text.includes('case study') || text.includes('practice')) {
+    return 'Case Study';
+  } else {
+    return 'Article';  // 默认类型
+  }
+};
 
 const App: React.FC = () => {
     const [processedDoc, setProcessedDoc] = useState<Document | null>(null);
@@ -153,12 +210,22 @@ const App: React.FC = () => {
 
             const canonicalUrl = presets.preset1.canonicalPrefix + slug;
             const ogImageUrl = generateOgImageUrl(canonicalUrl, sortedImages);
+            
+            // 生成 OG Title 的三个组成部分
+            const articleName = h1;
+            const brandName = presets.preset1.brandName;
+            const contentType = inferContentType(doc);
+            const ogTitle = generateOgTitle(articleName, brandName, contentType);
+            
             const initialSeoData: SeoData = {
                 metaDescription: getMetaTagContent(doc, 'description'), 
                 keywords: getMetaTagContent(doc, 'keywords'),
                 canonicalUrl: canonicalUrl,
-                ogTitle: presets.preset1.ogTitle,
-                ogDescription: presets.preset1.ogDescription,
+                ogTitle: ogTitle,
+                ogTitleArticleName: articleName,  // 新增
+                ogTitleBrandName: brandName,      // 新增
+                ogTitleContentType: contentType,  // 新增
+                ogDescription: generateInitialOgDescription(doc, h1),
                 ogImage: ogImageUrl,
                 ogUrl: canonicalUrl,
                 ogType: presets.preset1.ogType,
@@ -199,6 +266,17 @@ const App: React.FC = () => {
     const handleFormChange = (changedValues: any) => {
         if (!processedDoc) return;
 
+        // 处理 OG Title 三个组成部分的变化
+        if (changedValues.ogTitleArticleName || changedValues.ogTitleBrandName || changedValues.ogTitleContentType) {
+            const currentValues = form.getFieldsValue();
+            const newOgTitle = generateOgTitle(
+                changedValues.ogTitleArticleName || currentValues.ogTitleArticleName,
+                changedValues.ogTitleBrandName || currentValues.ogTitleBrandName,
+                changedValues.ogTitleContentType || currentValues.ogTitleContentType
+            );
+            changedValues.ogTitle = newOgTitle;
+            form.setFieldsValue({ ogTitle: newOgTitle });
+        }
 
         if (changedValues.canonicalUrl) {
             const newOgImage = generateOgImageUrl(changedValues.canonicalUrl, imageFiles);
@@ -245,10 +323,19 @@ const App: React.FC = () => {
 
         const canonicalUrl = selectedPreset.canonicalPrefix + slug;
         const ogImageUrl = generateOgImageUrl(canonicalUrl, imageFiles);
+        
+        // 获取当前的文章名和内容类型（保持不变），只更新品牌名
+        const currentValues = form.getFieldsValue();
+        const articleName = currentValues.ogTitleArticleName || h1;
+        const brandName = selectedPreset.brandName;
+        const contentType = currentValues.ogTitleContentType || inferContentType(processedDoc);
+        const newOgTitle = generateOgTitle(articleName, brandName, contentType);
+        
         const newValues = {
             canonicalUrl: canonicalUrl,
-            ogTitle: selectedPreset.ogTitle,
-            ogDescription: selectedPreset.ogDescription,
+            ogTitle: newOgTitle,
+            ogTitleBrandName: brandName,  // 更新品牌名
+            // ogDescription 保持不变，继续使用基于文章内容的描述
             ogImage: ogImageUrl,
             ogType: selectedPreset.ogType,
             ogUrl: canonicalUrl,
@@ -342,22 +429,34 @@ const App: React.FC = () => {
         }
         
         const articleText = processedDoc.body.innerText.trim().substring(0, 4000);
+        const h1 = processedDoc.querySelector('h1')?.textContent?.trim() || 'untitled';
         const prompt = `
-            请你扮演一位专业的谷歌SEO专家。我的核心关键词是 "${coreKeyword}"。
-            基于以下HTML文章内容，请围绕我的核心关键词，为我生成对谷歌搜索引擎友好的SEO元数据。
+            You are a professional Google SEO expert. My core keyword is "${coreKeyword}".
+            Based on the following HTML article content, please generate SEO-friendly metadata around my core keyword.
 
-            请严格遵守以下要求：
-            1.  **meta_description**: 长度必须严格控制在 140 到 160 个字符之间。内容要适合搜索引擎抓取，并自然地包含核心关键词。
-            2.  **keywords**: 字符总数（包括逗号）必须少于 100 个字符。返回 3-4 个与核心关键词最相关的关键词，用英文逗号分隔。
+            IMPORTANT: ALL responses must be in ENGLISH only.
 
-            请严格按照以下JSON格式返回，不要包含任何额外的解释或代码块标记。
+            Please strictly follow these requirements:
+            1. **meta_description**: Must be between 140-160 characters. Should be search engine friendly and naturally include the core keyword.
+            2. **keywords**: Total characters (including commas) must be less than 100. Return 3-4 keywords most relevant to the core keyword, separated by commas.
+            3. **content_type**: Classify the article into ONE of these types: Tutorial, News, Review, Case Study, Guide, Analysis, or Article.
+            4. **og_description**: Must be less than 125 characters. Follow this formula:
+               - Address user pain point + solution
+               - Include long-tail keywords
+               - Add a call-to-action (CTA)
+               - Example format: "X ways to [solve problem]: [specific benefits]. For [target audience] to [achieve result]. [CTA like 'Free Download' or 'Learn More'] →"
+
+            Return ONLY the following JSON format without any additional explanation or code block markers:
 
             {
-              "meta_description": "在此处生成描述",
-              "keywords": "在此处生成关键词"
+              "meta_description": "generate description here",
+              "keywords": "generate keywords here",
+              "content_type": "generate content type here",
+              "og_description": "generate OG description here"
             }
 
-            文章内容如下:
+            Article title: ${h1}
+            Article content:
             ---
             ${articleText}
             ---
@@ -370,12 +469,33 @@ const App: React.FC = () => {
             } else {
                 seoData = await callOpenAICompatibleAPI(provider, apiKey, prompt);
             }
-            const newValues = {
+            
+            // 获取当前表单值
+            const currentValues = form.getFieldsValue();
+            
+            // 如果 AI 返回了内容类型，更新 OG Title
+            let updatedValues: any = {
                 metaDescription: seoData.meta_description,
                 keywords: seoData.keywords,
             };
-            form.setFieldsValue(newValues);
-            handleFormChange(newValues);
+            
+            if (seoData.og_description) {
+                updatedValues.ogDescription = seoData.og_description;
+            }
+            
+            if (seoData.content_type) {
+                updatedValues.ogTitleContentType = seoData.content_type;
+                // 重新生成 OG Title
+                const newOgTitle = generateOgTitle(
+                    currentValues.ogTitleArticleName || h1,
+                    currentValues.ogTitleBrandName,
+                    seoData.content_type
+                );
+                updatedValues.ogTitle = newOgTitle;
+            }
+            
+            form.setFieldsValue(updatedValues);
+            handleFormChange(updatedValues);
             message.success('AI 优化成功！');
         } catch (error) {
             console.error(`${provider} AI优化失败:`, error);
