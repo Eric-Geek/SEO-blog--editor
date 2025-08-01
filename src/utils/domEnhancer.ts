@@ -351,3 +351,109 @@ export function prepareForPreview(doc: Document, imageFiles: { originalPath: str
   });
   return previewDoc;
 } 
+
+/**
+ * Converts YouTube embed URLs to iframe elements
+ */
+export function convertYouTubeLinksToEmbeds(doc: Document) {
+    if (!doc) return;
+    
+    // 查找所有包含 YouTube embed 链接的文本节点
+    const walker = document.createTreeWalker(
+      doc.body,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+    
+    const nodesToReplace: { node: Node; parent: Node; embedUrl: string }[] = [];
+    
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const text = node.textContent || '';
+      
+      // 匹配 YouTube embed URL 的正则表达式
+      const youtubeEmbedRegex = /https:\/\/www\.youtube\.com\/embed\/[a-zA-Z0-9_-]+(\?[^\s]*)?/g;
+      const matches = text.match(youtubeEmbedRegex);
+      
+      if (matches && node.parentNode) {
+        matches.forEach(match => {
+          nodesToReplace.push({
+            node: node,
+            parent: node.parentNode!,
+            embedUrl: match
+          });
+        });
+      }
+    }
+    
+    // 替换找到的链接为 iframe
+    nodesToReplace.forEach(({ node, parent, embedUrl }) => {
+      const text = node.textContent || '';
+      
+      // 创建一个容器来处理混合内容
+      const container = doc.createElement('div');
+      
+      // 分割文本，保留非链接部分
+      const parts = text.split(embedUrl);
+      
+      // 添加第一部分文本
+      if (parts[0]) {
+        container.appendChild(doc.createTextNode(parts[0]));
+      }
+      
+      // 创建 iframe 容器
+      const iframeWrapper = doc.createElement('div');
+      iframeWrapper.style.cssText = 'position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 20px 0;';
+      
+      // 创建 iframe
+      const iframe = doc.createElement('iframe');
+      iframe.src = embedUrl;
+      iframe.setAttribute('title', 'YouTube video player');
+      iframe.setAttribute('frameborder', '0');
+      iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+      iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+      iframe.setAttribute('allowfullscreen', 'true');
+      iframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%;';
+      
+      iframeWrapper.appendChild(iframe);
+      container.appendChild(iframeWrapper);
+      
+      // 添加剩余文本
+      if (parts[1]) {
+        container.appendChild(doc.createTextNode(parts[1]));
+      }
+      
+      // 替换原始节点
+      parent.replaceChild(container, node);
+    });
+    
+    // 处理单独段落中的链接（更常见的情况）
+    const paragraphs = doc.querySelectorAll('p');
+    paragraphs.forEach(p => {
+      const text = p.textContent || '';
+      const youtubeEmbedRegex = /^https:\/\/www\.youtube\.com\/embed\/[a-zA-Z0-9_-]+(\?[^\s]*)?$/;
+      
+      if (youtubeEmbedRegex.test(text.trim())) {
+        const embedUrl = text.trim();
+        
+        // 创建响应式容器
+        const iframeWrapper = doc.createElement('div');
+        iframeWrapper.style.cssText = 'position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 20px 0;';
+        
+        // 创建 iframe
+        const iframe = doc.createElement('iframe');
+        iframe.src = embedUrl;
+        iframe.setAttribute('title', 'YouTube video player');
+        iframe.setAttribute('frameborder', '0');
+        iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+        iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+        iframe.setAttribute('allowfullscreen', 'true');
+        iframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%;';
+        
+        iframeWrapper.appendChild(iframe);
+        
+        // 替换段落
+        p.parentNode?.replaceChild(iframeWrapper, p);
+      }
+    });
+  }

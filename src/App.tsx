@@ -12,7 +12,8 @@ import {
   generateTableOfContents,
   injectTableOfContents,
   prepareForPreview,
-  addReadingProgressBar
+  addReadingProgressBar,
+  convertYouTubeLinksToEmbeds  // 添加这一行
 } from './utils/domEnhancer';
 
 export interface ImageFile {
@@ -166,8 +167,11 @@ const App: React.FC = () => {
             
             // 1. Clean up Notion's default styles
             removeUnwantedCss(doc);
-            
-            // 2. Generate and inject the Table of Contents and its assets
+
+            // 2. Convert YouTube links to embeds
+            convertYouTubeLinksToEmbeds(doc);
+
+            // 3. Generate and inject the Table of Contents and its assets
             const tocData = generateTableOfContents(doc);
             if (tocData.items.length > 0) {
                 injectTableOfContents(doc, tocData);
