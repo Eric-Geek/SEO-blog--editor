@@ -1,0 +1,37 @@
+---
+globs: *.tsx,*.ts
+---
+
+# React + TypeScript 开发规范
+
+## 组件开发规范
+- 使用函数组件和 React Hooks
+- 组件名使用 PascalCase，文件名与组件名保持一致
+- 优先使用 TypeScript 接口定义 Props 类型
+- 使用 `React.FC<PropsType>` 类型注解函数组件
+
+## 状态管理
+- 使用 `useState` 管理组件本地状态
+- 复杂状态逻辑考虑使用 `useReducer`
+- Form 表单使用 Ant Design 的 Form 组件和 `Form.useForm()` Hook
+
+## 事件处理
+- 事件处理函数使用 `handle` 前缀命名，如 `handleFileSelect`
+- 异步操作使用 `async/await` 语法
+- 错误处理使用 try-catch 块，并通过 `message.error()` 显示错误信息
+
+## 类型定义
+- 在组件文件顶部定义接口，使用 `export interface` 导出公共接口
+- Props 接口命名使用组件名 + `Props` 后缀
+- 数据模型接口放在合适的位置，如 [src/App.tsx](mdc:src/App.tsx) 中的 `SeoData` 接口
+
+## 样式处理
+- 使用内联样式对象进行简单样式设置
+- 复杂样式通过 CSS-in-JS 或独立的 CSS 文件管理
+- 响应式设计考虑使用 Ant Design 的栅格系统
+
+## 导入规范
+- React 相关导入放在最前面
+- 第三方库导入其次
+- 项目内部模块导入放在最后
+- 使用相对路径导入项目内部模块

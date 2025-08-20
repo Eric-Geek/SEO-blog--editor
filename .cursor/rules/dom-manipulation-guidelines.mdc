@@ -1,0 +1,41 @@
+---
+description: DOM 操作和文档处理相关的开发指南
+---
+
+# DOM 操作和文档处理指南
+
+## 核心原则
+本项目的 DOM 操作主要集中在 [src/utils/domEnhancer.ts](mdc:src/utils/domEnhancer.ts) 中，遵循以下原则：
+
+### 文档克隆和操作
+- **始终在克隆的文档上进行操作**: 使用 `doc.cloneNode(true) as Document` 创建文档副本
+- **保持原始文档不变**: 主应用中的 `processedDoc` 是主版本，预览版本通过 `prepareForPreview()` 创建
+- **顺序执行增强功能**: 在 `handleFileSelect` 中按顺序执行所有 DOM 增强操作
+
+### DOM 增强功能
+1. **CSS 清理**: `removeUnwantedCss()` - 移除 Notion 默认样式
+2. **YouTube 嵌入**: `convertYouTubeLinksToEmbeds()` - 将 YouTube 链接转换为 iframe
+3. **目录生成**: `generateTableOfContents()` + `injectTableOfContents()` - 生成并注入目录
+4. **进度条**: `addReadingProgressBar()` - 添加阅读进度条
+
+### 图片处理
+- 使用 Blob URL 进行预览显示
+- 在最终下载时恢复相对路径
+- 通过 `imageFiles` 数组管理图片资源和 alt 文本
+
+### SEO 标签操作
+使用 [src/utils/domUtils.ts](mdc:src/utils/domUtils.ts) 中的工具函数：
+- `updateMetaTag()` - 更新 meta 标签
+- `updateLinkTag()` - 更新 link 标签
+- `getMetaTagContent()` - 获取 meta 标签内容
+
+### 脚本注入
+- 使用 `injectTOCScript()` 注入交互脚本
+- 脚本包含目录导航、平滑滚动、进度条更新等功能
+- 使用事件委托和防抖优化性能
+
+## 开发建议
+- 新增 DOM 操作功能时，优先在 `domEnhancer.ts` 中实现
+- 保持函数纯净，避免副作用
+- 使用 TypeScript 类型检查确保 DOM 操作安全
+- 测试时注意浏览器兼容性，特别是 iframe 和 CSS 样式

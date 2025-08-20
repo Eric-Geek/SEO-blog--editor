@@ -1,0 +1,53 @@
+---
+description: AI 服务集成和 API 调用相关的开发模式
+---
+
+# AI 集成开发模式
+
+## API 配置和管理
+AI 相关功能主要在 [src/utils/api.ts](mdc:src/utils/api.ts) 中实现，支持多个服务商：
+
+### 支持的 AI 服务商
+- **DeepSeek**: `api.deepseek.com` - 高性价比中文优化
+- **OpenAI**: `api.openai.com` - GPT-4o 模型
+- **Gemini**: `generativelanguage.googleapis.com` - Google AI
+- **Kimi**: `api.moonshot.cn` - 月之暗面长文本处理
+
+### API 调用模式
+```typescript
+// OpenAI 兼容 API (DeepSeek, OpenAI, Kimi)
+await callOpenAICompatibleAPI(provider, apiKey, prompt);
+
+// Gemini 专用 API
+await callGeminiAPI(apiKey, prompt);
+```
+
+## 提示词设计原则
+- **结构化输出**: 所有 AI 调用都要求返回 JSON 格式
+- **明确指令**: 包含字符长度限制、格式要求等具体指标
+- **上下文提供**: 传入文章标题、内容摘要和核心关键词
+- **多语言支持**: 根据内容语言调整提示词策略
+
+## 错误处理和用户体验
+- 使用 `try-catch` 包装所有 API 调用
+- 通过 `message.error()` 显示用户友好的错误信息
+- 在 API 调用期间显示加载状态 (`isAiLoading`)
+- API Key 存储在 `localStorage`，仅本地保存
+
+## 新增 AI 服务商流程
+1. 在 `apiDetails` 对象中添加新的配置
+2. 在 [src/components/ControlPanel.tsx](mdc:src/components/ControlPanel.tsx) 的 Select 组件中添加选项
+3. 在 [src/components/SettingsModal.tsx](mdc:src/components/SettingsModal.tsx) 中添加 API Key 输入字段
+4. 测试 API 兼容性，必要时创建专用调用函数
+
+## SEO 优化策略
+AI 优化主要针对以下 SEO 元素：
+- `meta_description`: 140-160 字符，包含核心关键词
+- `keywords`: 3-4 个相关关键词，总长度 <100 字符
+- `content_type`: 文章类型分类 (Tutorial, News, Review 等)
+- `og_description`: <125 字符的社交媒体描述
+
+## 性能考虑
+- 限制文章内容长度为 4000 字符避免 token 超限
+- 使用防抖避免频繁 API 调用
+- 缓存 API Key 减少用户输入次数

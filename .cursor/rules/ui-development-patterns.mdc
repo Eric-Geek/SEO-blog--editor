@@ -1,0 +1,106 @@
+---
+globs: *.tsx
+description: UI 组件开发和 Ant Design 使用规范
+---
+
+# UI 开发模式和 Ant Design 使用规范
+
+## 组件架构模式
+项目采用 Ant Design Layout 组件构建整体布局：
+
+### 主要布局结构
+- **Header**: 标题栏，包含应用名称和设置按钮
+- **Sider**: 左侧控制面板，宽度 400px，包含所有表单控件
+- **Content**: 右侧预览区域，支持响应式设备切换
+- **Footer**: 底部版权信息
+
+### 表单设计模式
+使用 Ant Design Form 组件，参考 [src/components/ControlPanel.tsx](mdc:src/components/ControlPanel.tsx)：
+
+```typescript
+const [form] = Form.useForm<SeoData>();
+
+// 表单值变化处理
+<Form form={form} layout="vertical" onValuesChange={onValuesChange}>
+```
+
+## 常用组件使用规范
+
+### Input 组件
+- **字符计数**: 使用 `showCount` 和 `maxLength` 属性
+- **提示信息**: 通过 `tooltip` 属性提供用户指导
+- **占位符**: 提供有意义的示例文本
+
+### TextArea 组件
+- **行数控制**: 根据内容类型设置合适的 `rows` 值
+- **字符限制**: Meta Description (160), Keywords (100), OG Description (125)
+
+### Select 组件
+- **预设选择**: 用于 AI 服务商选择和预设方案切换
+- **选项配置**: 提供清晰的 label 和 value 映射
+
+### Upload 组件
+- **文件类型限制**: `accept=".zip"` 仅允许 ZIP 文件
+- **单文件上传**: `maxCount={1}` 限制同时只能处理一个文件
+- **自定义处理**: `beforeUpload` 返回 false 阻止默认上传
+
+### Card 组件
+- **分组功能**: 使用 Card 将相关表单项分组
+- **标题层次**: 使用数字前缀标明操作顺序 ("1. 核心关键词")
+
+## 响应式设计
+### 设备预览功能
+```typescript
+const deviceDimensions = {
+  desktop: { width: '100%', height: '100%' },
+  tablet: { width: '768px', height: '1024px' },
+  mobile: { width: '375px', height: '667px' },
+};
+```
+
+### 样式处理
+- **内联样式**: 简单样式直接使用 style 属性
+- **动态样式**: 根据设备类型动态调整尺寸
+- **过渡效果**: 使用 `transition: 'all 0.4s ease'` 实现平滑切换
+
+## 用户交互模式
+### 消息提示
+使用 Ant Design message 组件：
+- `message.success()`: 操作成功提示
+- `message.error()`: 错误信息显示
+- `message.warning()`: 警告提示
+
+### 加载状态
+- **按钮加载**: Button 组件的 `loading` 属性
+- **全局加载**: 长时间操作时显示加载状态
+
+### 模态框
+参考 [src/components/SettingsModal.tsx](mdc:src/components/SettingsModal.tsx)：
+- 用于 API Key 设置等独立功能
+- 使用受控模式 (`open` + `onClose`)
+
+## 图片处理和显示
+### 图片预览
+```typescript
+<img 
+  src={image.blobUrl} 
+  alt="preview" 
+  style={{ 
+    width: 40, 
+    height: 40, 
+    objectFit: 'cover', 
+    borderRadius: 4 
+  }} 
+/>
+```
+
+### iframe 预览
+- 使用 `srcDoc` 属性直接渲染 HTML 内容
+- 通过 `XMLSerializer` 序列化 Document 对象
+- 设置 `border: 'none'` 实现无边框显示
+
+## 性能优化建议
+- **避免不必要的重渲染**: 使用 React.memo 包装纯组件
+- **表单优化**: 使用 Form.Item 的 `noStyle` 属性减少 DOM 嵌套
+- **图片懒加载**: 大量图片时考虑虚拟滚动
+- **防抖处理**: 表单输入变化时使用防抖避免频繁更新

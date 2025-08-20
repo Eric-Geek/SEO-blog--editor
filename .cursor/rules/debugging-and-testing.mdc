@@ -1,0 +1,127 @@
+---
+description: 调试和测试相关的开发指南
+---
+
+# 调试和测试指南
+
+## 调试工具和技巧
+
+### 浏览器开发者工具
+- **Console 调试**: 使用 `console.log`、`console.error` 跟踪执行流程
+- **Network 面板**: 监控 AI API 调用和响应
+- **Elements 面板**: 检查 DOM 增强效果和样式注入
+- **Application 面板**: 查看 localStorage 中的 API Key 存储
+
+### React DevTools
+- **组件状态检查**: 监控 `processedDoc`、`previewDoc`、`seoData` 等关键状态
+- **Props 传递**: 确认父子组件间的数据流
+- **Hook 调试**: 查看 `useState`、`useEffect` 的执行情况
+
+### 常见调试场景
+
+#### DOM 操作调试
+```typescript
+// 在 domEnhancer.ts 中添加调试信息
+console.log('Before CSS cleanup:', doc.head.innerHTML);
+removeUnwantedCss(doc);
+console.log('After CSS cleanup:', doc.head.innerHTML);
+```
+
+#### 文件处理调试
+```typescript
+// 检查 ZIP 文件内容
+zip.forEach((relativePath, zipEntry) => {
+  console.log('Found file:', relativePath, zipEntry.name);
+});
+```
+
+#### API 调用调试
+```typescript
+// 在 api.ts 中记录请求和响应
+console.log('API Request:', { provider, prompt: prompt.substring(0, 100) });
+console.log('API Response:', data);
+```
+
+## 测试策略
+
+### 手动测试检查清单
+#### 文件上传测试
+- [ ] 上传有效的 Notion ZIP 包
+- [ ] 上传无效文件（非 ZIP、空文件等）
+- [ ] 上传不包含 HTML 的 ZIP 文件
+- [ ] 上传包含特殊字符文件名的 ZIP
+
+#### SEO 功能测试
+- [ ] 表单字段输入和字符计数
+- [ ] 预设方案切换功能
+- [ ] Canonical URL 和 OG URL 同步
+- [ ] OG Title 三部分组合生成
+- [ ] 图片 Alt 文本编辑
+
+#### AI 集成测试
+- [ ] 各个 AI 服务商的 API 调用
+- [ ] API Key 存储和读取
+- [ ] 错误处理和用户提示
+- [ ] JSON 响应解析
+
+#### DOM 增强测试
+- [ ] 目录生成和导航功能
+- [ ] 阅读进度条显示
+- [ ] YouTube 视频嵌入
+- [ ] CSS 样式清理效果
+
+#### 响应式测试
+- [ ] 桌面、平板、手机三种预览模式
+- [ ] 目录在小屏幕下的隐藏
+- [ ] 图片在不同设备下的显示
+
+### 边界条件测试
+- **空内容处理**: 没有 H2 标题的文章
+- **大文件处理**: 包含大量图片的 ZIP 文件
+- **特殊字符**: 文件名和内容包含特殊字符
+- **网络异常**: API 调用超时或失败
+
+## 常见问题和解决方案
+
+### 图片显示问题
+**问题**: 图片无法在预览中显示
+**排查步骤**:
+1. 检查 Blob URL 是否正确创建
+2. 确认图片路径匹配逻辑
+3. 验证 `prepareForPreview` 函数执行
+
+### SEO 标签不生效
+**问题**: Meta 标签没有正确更新
+**排查步骤**:
+1. 检查 `updateMetaTag` 函数调用
+2. 确认文档克隆和状态更新顺序
+3. 验证表单值变化处理
+
+### AI 优化失败
+**问题**: AI API 调用返回错误
+**排查步骤**:
+1. 验证 API Key 格式和权限
+2. 检查请求体格式和必需参数
+3. 确认提示词长度和格式
+4. 查看 Network 面板的具体错误信息
+
+### 下载文件异常
+**问题**: 生成的 ZIP 文件有问题
+**排查步骤**:
+1. 检查文件路径转换逻辑
+2. 确认图片数据正确复制
+3. 验证 HTML 序列化结果
+4. 测试 ZIP 文件结构
+
+## 性能监控
+### 关键性能指标
+- **文件解析时间**: 从上传到预览显示的耗时
+- **DOM 操作时间**: 各个增强功能的执行时间
+- **API 响应时间**: AI 优化的响应速度
+- **内存使用**: 大文件处理时的内存占用
+
+### 性能优化检查点
+- 避免同步阻塞操作
+- 使用 Web Workers 处理大文件（如需要）
+- 实现图片懒加载和虚拟滚动
+- 优化 DOM 操作批次和频率

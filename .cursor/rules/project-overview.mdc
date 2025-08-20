@@ -1,0 +1,30 @@
+---
+alwaysApply: true
+---
+
+# SEO 博客编辑器项目概览
+
+这是一个基于 React + TypeScript 的 Notion 文章 SEO 优化工具，主要功能包括：
+
+## 核心功能
+- **ZIP 文件处理**: 解析 Notion 导出的 ZIP 包，提取 HTML 和图片资源
+- **SEO 优化**: 自动生成和编辑 Meta Description、Keywords、Canonical URL、Open Graph 标签
+- **AI 集成**: 支持 DeepSeek、OpenAI、Gemini、Kimi 等多个 AI 服务商进行内容优化
+- **阅读体验增强**: 自动生成目录、阅读进度条、YouTube 视频嵌入等功能
+
+## 项目结构
+- 主入口: [src/main.tsx](mdc:src/main.tsx)
+- 主应用组件: [src/App.tsx](mdc:src/App.tsx)
+- 控制面板组件: [src/components/ControlPanel.tsx](mdc:src/components/ControlPanel.tsx)
+- DOM 增强工具: [src/utils/domEnhancer.ts](mdc:src/utils/domEnhancer.ts)
+- API 调用工具: [src/utils/api.ts](mdc:src/utils/api.ts)
+
+## 技术栈
+- React 18.2.0 + TypeScript 5.2.2
+- Vite 5.0.8 (构建工具)
+- Ant Design 5.12.8 (UI 组件库)
+- JSZip 3.10.1 (ZIP 文件处理)
+
+## 部署配置
+- GitHub Pages 部署，构建输出到 `docs` 目录
+- 配置文件: [vite.config.ts](mdc:vite.config.ts)

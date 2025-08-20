@@ -1,0 +1,101 @@
+---
+description: ZIP 文件处理和文件操作相关的开发模式
+---
+
+# 文件处理和 ZIP 操作模式
+
+## ZIP 文件处理流程
+主要在 [src/App.tsx](mdc:src/App.tsx) 的 `handleFileSelect` 函数中实现：
+
+### 基本处理流程
+1. **加载 ZIP**: `await JSZip.loadAsync(file)`
+2. **文件遍历**: 使用 `zip.forEach()` 遍历所有文件
+3. **异步处理**: 使用 `Promise.all()` 并发处理文件
+4. **资源分类**: HTML 文件和图片文件分别处理
+
+### 文件类型识别
+```typescript
+// HTML 文件识别
+if (zipEntry.name.toLowerCase().endsWith('.html'))
+
+// 图片文件识别
+if (!zipEntry.dir && (
+  zipEntry.name.toLowerCase().includes('image') || 
+  /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(zipEntry.name)
+))
+```
+
+### 图片资源管理
+- **Blob URL 创建**: `URL.createObjectURL(blob)` 用于预览
+- **路径映射**: 维护 `originalPath` 到 `blobUrl` 的映射关系
+- **Alt 文本生成**: 基于文件名自动生成初始 Alt 文本
+
+## 文档解析和处理
+### HTML 解析
+```typescript
+const parser = new DOMParser();
+let doc = parser.parseFromString(htmlContent, 'text/html');
+```
+
+### DOM 增强顺序
+**重要**: 所有 DOM 操作必须在同一个 doc 对象上按顺序执行：
+1. `removeUnwantedCss(doc)` - 清理样式
+2. `convertYouTubeLinksToEmbeds(doc)` - 转换视频链接
+3. `generateTableOfContents(doc)` + `injectTableOfContents(doc, tocData)` - 生成目录
+4. `addReadingProgressBar(doc)` - 添加进度条（如果没有目录）
+
+### 文档克隆策略
+- **主文档**: `processedDoc` - 完整增强的主版本
+- **预览文档**: 通过 `prepareForPreview(doc, images)` 创建，替换图片路径为 Blob URL
+- **下载文档**: 最终输出时再次克隆并应用最终设置
+
+## 下载和打包流程
+### 文件结构生成
+```
+{slug}/
+├── index.html          # 主 HTML 文件
+└── {slug}-img/        # 图片文件夹
+    ├── image1.jpg
+    └── image2.png
+```
+
+### 路径转换
+- **预览阶段**: 使用 Blob URL (`blob:http://...`)
+- **下载阶段**: 转换为相对路径 (`{slug}-img/{filename}`)
+- **链接处理**: 同时更新 `<a>` 标签的 `href` 属性
+
+### ZIP 生成
+```typescript
+const newZip = new JSZip();
+newZip.file(`${finalSlug}/index.html`, finalHtml);
+// 添加图片文件
+newZip.file(`${imageFolderName}/${fileName}`, data);
+// 生成下载
+const zipBlob = await newZip.generateAsync({ type: 'blob' });
+```
+
+## 错误处理和用户反馈
+### 常见错误场景
+- **ZIP 文件格式错误**: 捕获 JSZip 加载异常
+- **HTML 文件缺失**: 检查是否找到 HTML 内容
+- **图片处理失败**: 单个图片失败不影响整体流程
+
+### 用户反馈
+- **成功提示**: `message.success('文件解析成功！')`
+- **错误提示**: 显示具体错误信息和建议
+- **状态重置**: 错误时清理所有相关状态
+
+## 性能优化建议
+### 并发处理
+- 使用 `Promise.all()` 并发处理多个文件
+- 避免在循环中使用 `await`，收集 Promise 后统一等待
+
+### 内存管理
+- 及时调用 `URL.revokeObjectURL()` 释放 Blob URL
+- 大文件处理时考虑分片或流式处理
+- 避免在内存中同时保持多个大文档副本
+
+### 用户体验
+- 显示处理进度（如果处理时间较长）
+- 提供取消操作的能力
+- 缓存处理结果避免重复计算

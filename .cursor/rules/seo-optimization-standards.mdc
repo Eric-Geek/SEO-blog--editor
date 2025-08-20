@@ -1,0 +1,79 @@
+---
+description: SEO 优化相关的标准和最佳实践
+---
+
+# SEO 优化标准和实践
+
+## SEO 元标签规范
+项目中的 SEO 优化遵循以下标准，主要在 [src/App.tsx](mdc:src/App.tsx) 中实现：
+
+### Meta Description
+- **长度要求**: 140-160 字符
+- **内容要求**: 包含核心关键词，简洁描述文章主题
+- **实现**: 通过 `updateMetaTag(doc, 'description', value)` 更新
+
+### Keywords
+- **数量建议**: 3-4 个关键词
+- **长度限制**: 总字符数 <100（包括逗号）
+- **格式**: 英文逗号分隔，避免关键词堆砌
+
+### Canonical URL
+- **格式**: `https://domain.com/path/slug`
+- **Slug 生成**: 使用 `generateSlug()` 函数，基于文章 H1 标题
+- **同步**: 与 `og:url` 保持一致
+
+## Open Graph 标签优化
+### OG Title 组合结构
+```
+{文章名} - {品牌名} | {内容类型}
+```
+- 通过 `generateOgTitle()` 函数自动组合
+- 三个组成部分可独立编辑：`ogTitleArticleName`、`ogTitleBrandName`、`ogTitleContentType`
+
+### OG Description
+- **长度限制**: <125 字符
+- **内容策略**: 用户痛点 + 解决方案 + 行动召唤
+- **格式示例**: "X ways to [solve problem]: [benefits]. For [audience] to [achieve result]. [CTA] →"
+
+### OG Image
+- **自动生成**: 基于 Canonical URL + 文章第二张图片
+- **URL 格式**: `{canonicalUrl}-img/{filename}`
+- **回退机制**: 如果没有第二张图片，返回空字符串
+
+## 预设方案管理
+支持多套预设配置，在 `presets` 对象中定义：
+- **Preset 1**: GlobalGPT (glbgpt.com)
+- **Preset 2**: Penligent AI (penligent.ai)
+
+每个预设包含：
+- `canonicalPrefix`: URL 前缀
+- `brandName`: 品牌名称
+- `ogTitle`: 默认 OG 标题模板
+- `ogDescription`: 默认描述
+- `ogType`: 内容类型（通常为 'website'）
+
+## 图片 SEO 优化
+### Alt 文本生成
+- **自动提取**: 从图片文件名生成初始 Alt 文本
+- **用户编辑**: 支持在控制面板中实时修改
+- **命名规范**: 移除连字符和下划线，转换为可读文本
+
+### 图片路径处理
+- **预览阶段**: 使用 Blob URL 显示图片
+- **下载阶段**: 转换为相对路径 `{slug}-img/{filename}`
+- **SEO 友好**: 图片文件夹名基于文章 slug
+
+## 内容类型推断
+`inferContentType()` 函数根据文章内容自动判断：
+- **Tutorial**: 包含 "教程"、"指南"、"如何" 等关键词
+- **News**: 包含 "新闻"、"发布"、"更新" 等
+- **Review**: 包含 "评测"、"对比"、"测评" 等
+- **Case Study**: 包含 "案例"、"实践"、"经验" 等
+- **Article**: 默认类型
+
+## 最佳实践建议
+1. **关键词密度**: 避免过度优化，保持自然语言表达
+2. **标题层次**: 确保 H1 唯一，H2 用于章节标题
+3. **内容质量**: AI 优化仅为辅助，人工审核必不可少
+4. **移动友好**: 所有生成的内容都考虑移动设备显示
+5. **页面速度**: 图片优化和 CSS 精简有助于提升加载速度

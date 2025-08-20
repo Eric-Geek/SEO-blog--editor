@@ -1,0 +1,137 @@
+---
+description: 项目构建、部署和发布相关的配置和流程
+---
+
+# 构建和部署指南
+
+## 构建配置
+项目使用 Vite 作为构建工具，配置在 [vite.config.ts](mdc:vite.config.ts) 中：
+
+### 关键配置项
+```typescript
+export default defineConfig({
+  base: '/SEO-blog--editor/',  // GitHub Pages 子路径
+  plugins: [react()],          // React 插件支持
+  build: {
+    outDir: 'docs',           // 输出到 docs 目录
+    emptyOutDir: true,        // 构建前清空目录
+  }
+})
+```
+
+### 构建命令
+- `npm run dev`: 启动开发服务器
+- `npm run build`: 构建生产版本
+- `npm run preview`: 预览构建结果
+
+## GitHub Pages 部署
+### 部署配置
+- **源码分支**: `editor-2` (当前开发分支)
+- **部署目录**: `docs/` (构建输出目录)
+- **访问地址**: `https://eric-geek.github.io/SEO-blog--editor/`
+
+### 部署流程
+1. **本地构建**: `npm run build`
+2. **提交更改**: 将 `docs/` 目录的更改提交到仓库
+3. **推送代码**: `git push origin editor-2`
+4. **自动部署**: GitHub Pages 自动检测并部署
+
+### 静态资源处理
+- **基础路径**: 所有资源路径都会添加 `/SEO-blog--editor/` 前缀
+- **资源引用**: Vite 自动处理静态资源的路径转换
+- **缓存策略**: 生产环境下启用文件哈希命名
+
+## 依赖管理
+### 生产依赖 (dependencies)
+- `react` + `react-dom`: 核心框架
+- `antd`: UI 组件库
+- `jszip`: ZIP 文件处理
+
+### 开发依赖 (devDependencies)
+- `@types/*`: TypeScript 类型定义
+- `@vitejs/plugin-react`: Vite React 插件
+- `typescript`: TypeScript 编译器
+- `vite`: 构建工具
+
+### 版本管理策略
+- **主要依赖**: 使用固定版本避免破坏性更新
+- **类型定义**: 可以使用 `^` 前缀自动更新补丁版本
+- **定期更新**: 定期检查依赖更新和安全漏洞
+
+## 环境变量和配置
+### 客户端环境变量
+- 所有环境变量必须以 `VITE_` 前缀开头
+- API 端点可通过环境变量配置（如需要）
+- 构建时会将环境变量内联到代码中
+
+### 配置文件管理
+- **开发环境**: `.env.local` (不提交到仓库)
+- **生产环境**: 通过 GitHub Secrets 或部署平台配置
+- **类型安全**: 在 `vite-env.d.ts` 中定义环境变量类型
+
+## 多平台部署支持
+### Vercel 部署
+```json
+// vercel.json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "docs",
+  "framework": "vite"
+}
+```
+
+### Netlify 部署
+```toml
+# netlify.toml
+[build]
+  command = "npm run build"
+  publish = "docs"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+### 自定义服务器部署
+- **静态文件服务**: 任何支持静态文件的服务器
+- **SPA 路由**: 需要配置回退到 `index.html`
+- **HTTPS**: 推荐使用 HTTPS，特别是涉及 API 调用时
+
+## 性能优化
+### 构建优化
+- **代码分割**: Vite 自动进行代码分割
+- **Tree Shaking**: 移除未使用的代码
+- **资源压缩**: 自动压缩 CSS 和 JavaScript
+- **图片优化**: 可考虑添加图片压缩插件
+
+### 加载优化
+- **预加载**: 关键资源预加载
+- **懒加载**: 非首屏组件懒加载
+- **缓存策略**: 利用浏览器缓存和 CDN
+
+## 监控和分析
+### 构建分析
+```bash
+# 分析构建产物大小
+npm run build -- --mode analyze
+```
+
+### 运行时监控
+- **错误监控**: 可集成 Sentry 等错误监控服务
+- **性能监控**: 使用 Web Vitals 监控核心性能指标
+- **用户行为**: 可添加 Google Analytics 等分析工具
+
+## 发布流程
+### 版本发布检查清单
+- [ ] 本地功能测试完成
+- [ ] 构建无错误和警告
+- [ ] 依赖安全检查通过
+- [ ] 文档更新完成
+- [ ] 变更日志记录
+- [ ] 标签版本创建
+
+### 回滚策略
+- **快速回滚**: 通过 Git 回退到上一个稳定版本
+- **分支管理**: 保持 `main` 分支的稳定性
+- **备份策略**: 重要版本创建 Git 标签备份
