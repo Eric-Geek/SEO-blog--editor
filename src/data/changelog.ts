@@ -7,6 +7,14 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '1.5.0',
+    date: '2025-08-24',
+    type: 'feature',
+    changes: [
+      'Added Image-converter',
+    ]
+  },
+  {
     version: '1.4.0',
     date: '2025-08-01',
     type: 'feature',
