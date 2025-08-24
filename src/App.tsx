@@ -15,11 +15,16 @@ import {
   addReadingProgressBar,
   convertYouTubeLinksToEmbeds  // 添加这一行
 } from './utils/domEnhancer';
+import { batchCompressImages, getCompressionStats } from './utils/imageCompressor';
 
 export interface ImageFile {
   originalPath: string;
   blobUrl: string;
   alt: string;
+  compressedBlob?: Blob;  // 压缩后的Blob
+  newPath?: string;       // 新的文件路径（WebP格式）
+  originalSize?: number;  // 原始大小
+  compressedSize?: number; // 压缩后大小
 }
 
 interface Preset {
@@ -126,7 +131,8 @@ const App: React.FC = () => {
         // 获取第二张图片（索引为1）
         if (images.length >= 2) {
             const secondImage = images[1];
-            const fileName = secondImage.originalPath.split('/').pop() || '';
+            // 使用新的WebP文件名（如果有），否则使用原始文件名
+            const fileName = secondImage.newPath?.split('/').pop() || secondImage.originalPath.split('/').pop() || '';
             return `${canonicalUrl}-img/${fileName}`;
         }
         // 如果没有第二张图片，返回空字符串
@@ -139,6 +145,7 @@ const App: React.FC = () => {
             setOriginalZip(zip);
             let htmlContent = '';
             const images: ImageFile[] = [];
+            const imageBlobs: Array<{ blob: Blob; originalPath: string }> = [];
 
             const filePromises: Promise<void>[] = [];
             zip.forEach((relativePath, zipEntry) => {
@@ -147,10 +154,12 @@ const App: React.FC = () => {
                 } else if (!zipEntry.dir && (zipEntry.name.toLowerCase().includes('image') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(zipEntry.name))) {
                     filePromises.push(
                         zipEntry.async('blob').then(blob => {
+                            imageBlobs.push({ blob, originalPath: relativePath });
                             images.push({
                                 originalPath: relativePath,
                                 blobUrl: URL.createObjectURL(blob),
                                 alt: '',
+                                originalSize: blob.size,
                             });
                         })
                     );
@@ -160,8 +169,70 @@ const App: React.FC = () => {
 
             if (!htmlContent) throw new Error('ZIP包中未找到HTML文件。');
 
+            // 压缩图片（静默处理，不显示弹窗）
+            const compressedImages = await batchCompressImages(
+                imageBlobs,
+                50 // 压缩到50KB以下
+            );
+            
+            // 计算压缩统计
+            let totalOriginalSize = 0;
+            let totalCompressedSize = 0;
+            
+            // 更新images数组，添加压缩后的信息
+            const pathMapping: Record<string, string> = {};
+            for (let i = 0; i < compressedImages.length; i++) {
+                const compressed = compressedImages[i];
+                const original = images[i];
+                
+                // 释放原来的blob URL
+                URL.revokeObjectURL(original.blobUrl);
+                
+                // 创建新的blob URL（压缩后的）
+                const newBlobUrl = URL.createObjectURL(compressed.blob);
+                
+                // 更新图片信息
+                images[i] = {
+                    ...original,
+                    blobUrl: newBlobUrl,
+                    compressedBlob: compressed.blob,
+                    newPath: compressed.newPath,
+                    compressedSize: compressed.blob.size,
+                };
+                
+                // 记录路径映射（从原始路径到新路径）
+                pathMapping[compressed.originalPath] = compressed.newPath;
+                
+                totalOriginalSize += original.originalSize || 0;
+                totalCompressedSize += compressed.blob.size;
+            }
+            
+            // 生成压缩统计信息（可选：在控制台输出）
+            const stats = getCompressionStats(totalOriginalSize, totalCompressedSize);
+            console.log(`图片压缩完成：从 ${stats.originalSize} 压缩至 ${stats.compressedSize}（减少 ${stats.reductionPercentage}）`);
+
             const parser = new DOMParser();
             let doc = parser.parseFromString(htmlContent, 'text/html');
+            
+            // 更新HTML中的图片引用（使用新的WebP路径）
+            doc.querySelectorAll('img').forEach(img => {
+                const src = img.getAttribute('src');
+                if (src && pathMapping[src]) {
+                    // 将原始路径替换为新的WebP路径
+                    const newPath = pathMapping[src];
+                    const fileName = newPath.split('/').pop() || '';
+                    img.setAttribute('src', fileName);
+                    
+                    // 如果图片被链接包围，也更新链接
+                    const parentLink = img.closest('a');
+                    if (parentLink) {
+                        const href = parentLink.getAttribute('href');
+                        if (href === src) {
+                            parentLink.setAttribute('href', fileName);
+                        }
+                    }
+                }
+            });
 
             // --- ALL DOM MANIPULATIONS MUST HAPPEN HERE, ON THE SAME DOC OBJECT ---
             
@@ -189,7 +260,10 @@ const App: React.FC = () => {
             setPreviewDoc(docForPreview);
 
             images.forEach(imgData => {
-                const imgElement = doc.querySelector(`img[src="${imgData.originalPath}"]`);
+                // 使用新的文件名查找img元素（如果有WebP转换）
+                const searchFileName = imgData.newPath?.split('/').pop() || imgData.originalPath.split('/').pop() || '';
+                const imgElement = doc.querySelector(`img[src="${searchFileName}"]`) || 
+                                   doc.querySelector(`img[src="${imgData.originalPath}"]`);
                 const fileName = imgData.originalPath.split('/').pop() || '';
                 const altBase = fileName.split('.').slice(0, -1).join('.');
                 imgData.alt = imgElement?.getAttribute('alt') || altBase.replace(/[-_]/g, ' ').trim();
@@ -200,8 +274,11 @@ const App: React.FC = () => {
                 const imgSrc = imgElement.getAttribute('src');
                 if (!imgSrc) return;
                 const foundImage = images.find(imageFile => {
-                    const fileName = imageFile.originalPath.split('/').pop() || '';
-                    return imageFile.originalPath === imgSrc || imgSrc === fileName || imgSrc.endsWith('/' + fileName);
+                    // 检查新的WebP文件名或原始文件名
+                    const newFileName = imageFile.newPath?.split('/').pop() || '';
+                    const originalFileName = imageFile.originalPath.split('/').pop() || '';
+                    return imgSrc === newFileName || imgSrc === originalFileName || 
+                           imgSrc.endsWith('/' + newFileName) || imgSrc.endsWith('/' + originalFileName);
                 });
                 if (foundImage && !sortedImages.includes(foundImage)) {
                     sortedImages.push(foundImage);
@@ -369,9 +446,14 @@ const App: React.FC = () => {
         imageFiles.forEach(imageFile => {
             const altValue = currentValues[imageFile.originalPath];
             if (altValue !== undefined) {
-                const imgElement = Array.from(docClone.querySelectorAll('img')).find(img => 
-                    img.getAttribute('src')?.endsWith(imageFile.originalPath.split('/').pop() || '')
-                );
+                // 使用新的WebP文件名查找img元素
+                const newFileName = imageFile.newPath?.split('/').pop() || '';
+                const originalFileName = imageFile.originalPath.split('/').pop() || '';
+                const imgElement = Array.from(docClone.querySelectorAll('img')).find(img => {
+                    const src = img.getAttribute('src') || '';
+                    return src.endsWith(newFileName) || src.endsWith(originalFileName) || 
+                           src === newFileName || src === originalFileName;
+                });
                 if (imgElement) {
                     imgElement.setAttribute('alt', altValue);
                 }
@@ -381,6 +463,7 @@ const App: React.FC = () => {
         docClone.querySelectorAll('img').forEach(img => {
             const originalSrc = img.getAttribute('src');
             if (originalSrc) {
+                // 图片src已经在处理时更新为新的WebP文件名了
                 const fileName = originalSrc.split('/').pop() || '';
                 const newPath = `${imageFolderName}/${fileName}`;
                 img.setAttribute('src', newPath);
@@ -398,11 +481,21 @@ const App: React.FC = () => {
         newZip.file(`${finalSlug}/index.html`, finalHtml);
 
         const imageAddPromises = imageFiles.map(async (imageFile) => {
-            const file = originalZip.file(imageFile.originalPath);
-            if (file) {
-                const data = await file.async('uint8array');
-                const fileName = imageFile.originalPath.split('/').pop() || '';
+            // 使用压缩后的图片（如果有的话）
+            if (imageFile.compressedBlob) {
+                // 使用新的文件名（WebP格式）
+                const fileName = imageFile.newPath?.split('/').pop() || imageFile.originalPath.split('/').pop() || '';
+                const arrayBuffer = await imageFile.compressedBlob.arrayBuffer();
+                const data = new Uint8Array(arrayBuffer);
                 newZip.file(`${imageFolderName}/${fileName}`, data);
+            } else {
+                // 如果没有压缩（比如SVG），使用原始文件
+                const file = originalZip.file(imageFile.originalPath);
+                if (file) {
+                    const data = await file.async('uint8array');
+                    const fileName = imageFile.originalPath.split('/').pop() || '';
+                    newZip.file(`${imageFolderName}/${fileName}`, data);
+                }
             }
         });
 
