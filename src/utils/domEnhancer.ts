@@ -334,16 +334,27 @@ export function addReadingProgressBar(doc: Document) {
 /**
  * Prepares a document for preview by replacing image paths with blob URLs.
  */
-export function prepareForPreview(doc: Document, imageFiles: { originalPath: string; blobUrl: string }[]): Document {
+export function prepareForPreview(doc: Document, imageFiles: { originalPath: string; blobUrl: string; newPath?: string }[]): Document {
   const previewDoc = doc.cloneNode(true) as Document;
   previewDoc.querySelectorAll('img').forEach(img => {
       const originalSrc = decodeURIComponent(img.getAttribute('src') || '');
-      // Try to find a direct match first
-      let imageFile = imageFiles.find(f => f.originalPath === originalSrc);
-      // If not found, try to match by filename, which is more robust
+      // Try to find by new WebP filename first
+      let imageFile = imageFiles.find(f => {
+        const newFileName = f.newPath?.split('/').pop() || '';
+        return newFileName && originalSrc === newFileName;
+      });
+      // If not found, try to find a direct match by originalPath
+      if (!imageFile) {
+        imageFile = imageFiles.find(f => f.originalPath === originalSrc);
+      }
+      // If still not found, try to match by filename, which is more robust
       if (!imageFile) {
         const fileName = originalSrc.split('/').pop();
-        imageFile = imageFiles.find(f => f.originalPath.endsWith(fileName || ''));
+        imageFile = imageFiles.find(f => {
+          const origFileName = f.originalPath.split('/').pop() || '';
+          const newFileName = f.newPath?.split('/').pop() || '';
+          return origFileName === fileName || newFileName === fileName;
+        });
       }
       if (imageFile) {
           img.setAttribute('src', imageFile.blobUrl);

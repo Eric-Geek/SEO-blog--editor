@@ -190,7 +190,10 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         </Form.Item>
       </Card>
 
-      <Form.Item label="6. 图片 Alt 文本">
+      <Form.Item 
+        label="6. 图片 Alt 文本"
+        tooltip="图片已自动压缩至50KB以下并转换为WebP格式，以提升网站加载速度和SEO表现"
+      >
         {imageFiles.length > 0 ? (
           imageFiles.map((image) => (
             <div key={image.originalPath} style={{ marginBottom: 16, display: 'flex', alignItems: 'center' }}>
