@@ -461,16 +461,29 @@ const App: React.FC = () => {
         });
         
         docClone.querySelectorAll('img').forEach(img => {
-            const originalSrc = img.getAttribute('src');
-            if (originalSrc) {
-                // 图片src已经在处理时更新为新的WebP文件名了
-                const fileName = originalSrc.split('/').pop() || '';
-                const newPath = `${imageFolderName}/${fileName}`;
+            const currentSrc = img.getAttribute('src');
+            if (currentSrc) {
+                // 查找对应的图片文件信息
+                const currentFileName = currentSrc.split('/').pop() || '';
+                const imageFile = imageFiles.find(imgFile => {
+                    const webpFileName = imgFile.newPath?.split('/').pop() || '';
+                    const originalFileName = imgFile.originalPath.split('/').pop() || '';
+                    // 匹配当前src（可能是WebP或原始文件名）
+                    return currentFileName === webpFileName || currentFileName === originalFileName;
+                });
+                
+                // 使用正确的文件名（优先使用WebP）
+                const finalFileName = imageFile?.newPath?.split('/').pop() || 
+                                     imageFile?.originalPath.split('/').pop() || 
+                                     currentFileName;
+                const newPath = `${imageFolderName}/${finalFileName}`;
                 img.setAttribute('src', newPath);
+                
+                // 更新父链接（如果存在）
                 const parentLink = img.closest('a');
                 if (parentLink) {
                     const originalHref = parentLink.getAttribute('href');
-                    if (originalHref?.split('/').pop() === fileName) {
+                    if (originalHref === currentSrc || originalHref?.split('/').pop() === currentFileName) {
                         parentLink.setAttribute('href', newPath);
                     }
                 }
